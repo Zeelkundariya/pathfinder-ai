@@ -94,6 +94,10 @@ export async function improveWithAI({ current, type }) {
     return improvedContent;
   } catch (error) {
     console.error("Error improving content:", error);
-    throw new Error("Failed to improve content");
+    throw new Error(
+      error?.code === "RATE_LIMITED"
+        ? "AI quota reached — please try again in a few minutes."
+        : "Failed to improve content"
+    );
   }
 }
