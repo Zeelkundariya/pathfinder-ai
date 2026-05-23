@@ -1,7 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 
-export async function GET(request, { params }) {
+export async function GET(request, context) {
+  const params = await context.params;
+
   try {
     const { userId } = await auth();
 
@@ -50,7 +52,9 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
+  const params = await context.params;
+
   try {
     const { userId } = await auth();
 
@@ -68,25 +72,25 @@ export async function DELETE(request, { params }) {
       return Response.json({ error: "User not found" }, { status: 404 });
     }
 
-   const conversation = await db.conversation.findFirst({
-  where: {
-    id: params.id,
-    userId: user.id,
-  },
-});
+    const conversation = await db.conversation.findFirst({
+      where: {
+        id: params.id,
+        userId: user.id,
+      },
+    });
 
-if (!conversation) {
-  return Response.json(
-    { error: "Conversation not found" },
-    { status: 404 }
-  );
-}
+    if (!conversation) {
+      return Response.json(
+        { error: "Conversation not found" },
+        { status: 404 }
+      );
+    }
 
-await db.conversation.delete({
-  where: {
-    id: params.id,
-  },
-});
+    await db.conversation.delete({
+      where: {
+        id: params.id,
+      },
+    });
 
     return Response.json({ success: true });
   } catch (error) {

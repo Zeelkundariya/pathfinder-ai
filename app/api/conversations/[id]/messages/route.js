@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 
-export async function POST(request, { params }) {
+export async function POST(request, context) {
+  const params = await context.params;
   try {
     const { userId } = await auth();
 
