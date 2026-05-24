@@ -1,24 +1,61 @@
 "use client";
 
-export default function DownloadPDF({ data, filename = "file.pdf" }) {
-  const handleDownload = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Download, FileLoader } from "lucide-react";
+import { toast } from "sonner";
 
-    const url = URL.createObjectURL(blob);
+export default function DownloadPdf({ contentRefId, fileName, label = "Download PDF" }) {
+  const [isGenerating, setIsGenerating] = useState(false);
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
+  const handleDownload = async () => {
+    const element = document.getElementById(contentRefId);
+    if (!element) {
+      toast.error("Content not found for PDF generation.");
+      return;
+    }
 
-    URL.revokeObjectURL(url);
+    setIsGenerating(true);
+    try {
+      const { default: html2pdf } = await import("html2pdf.js");
+      
+      const opt = {
+        margin: [15, 15],
+        filename: fileName || "document.pdf",
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["avoid-all", "css", "legacy"] }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      toast.success("PDF generated successfully!");
+    } catch (error) {
+      console.error("PDF Error:", error);
+      toast.error("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
-    <button onClick={handleDownload} className="px-3 py-2 rounded bg-black text-white hover:bg-black/90 text-sm">
-      Download PDF
-    </button>
+    <Button 
+      variant="outline" 
+      onClick={handleDownload} 
+      disabled={isGenerating}
+      className="gap-2"
+    >
+      {isGenerating ? (
+        <>
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          Generating...
+        </>
+      ) : (
+        <>
+          <Download className="h-4 w-4" />
+          {label}
+        </>
+      )}
+    </Button>
   );
 }

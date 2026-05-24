@@ -5,21 +5,27 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 async function getUserByClerkId(userId) {
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
 
-  if (!user) {
-    throw new Error("User not found");
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return user;
+  } catch (error) {
+    console.error("[Settings Action] Error fetching user:", error.message);
+    throw error;
   }
-
-  return user;
 }
 
 function normalizeSettings(settings) {
+  if (!settings) return { notifications: true, emailAlerts: true };
   return {
-    notifications: settings.notifications,
-    emailAlerts: settings.emailAlerts,
+    notifications: settings.notifications ?? true,
+    emailAlerts: settings.emailAlerts ?? true,
   };
 }
 
@@ -33,21 +39,27 @@ function normalizeSettingsInput(data) {
 export async function getUserSettings(userId) {
   if (!userId) return null;
 
-  const user = await getUserByClerkId(userId);
+  try {
+    const user = await getUserByClerkId(userId);
 
-  const existingSettings = await db.userSettings.findUnique({
-    where: { userId: user.id },
-  });
+    const existingSettings = await db.userSettings.findUnique({
+      where: { userId: user.id },
+    });
 
-  if (existingSettings) {
-    return normalizeSettings(existingSettings);
+    if (existingSettings) {
+      return normalizeSettings(existingSettings);
+    }
+
+    const settings = await db.userSettings.create({
+      data: { userId: user.id },
+    });
+
+    return normalizeSettings(settings);
+  } catch (error) {
+    console.error("[Settings Action] Error in getUserSettings:", error.message);
+    // Return default settings if DB call fails (e.g. table missing)
+    return normalizeSettings(null);
   }
-
-  const settings = await db.userSettings.create({
-    data: { userId: user.id },
-  });
-
-  return normalizeSettings(settings);
 }
 
 export async function updateUserSettings(userId, data) {
@@ -57,24 +69,29 @@ export async function updateUserSettings(userId, data) {
     throw new Error("Unauthorized");
   }
 
-  const user = await getUserByClerkId(userId);
-  const settingsData = normalizeSettingsInput(data);
+  try {
+    const user = await getUserByClerkId(userId);
+    const settingsData = normalizeSettingsInput(data);
 
-  const existingSettings = await db.userSettings.findUnique({
-    where: { userId: user.id },
-  });
-
-  if (!existingSettings) {
-    await db.userSettings.create({
-      data: { userId: user.id },
+    const existingSettings = await db.userSettings.findUnique({
+      where: { userId: user.id },
     });
+
+    if (!existingSettings) {
+      await db.userSettings.create({
+        data: { userId: user.id },
+      });
+    }
+
+    const settings = await db.userSettings.update({
+      where: { userId: user.id },
+      data: settingsData,
+    });
+
+    revalidatePath("/settings");
+    return normalizeSettings(settings);
+  } catch (error) {
+    console.error("[Settings Action] Error in updateUserSettings:", error.message);
+    throw new Error("Failed to update settings. Please ensure database migrations are applied.");
   }
-
-  const settings = await db.userSettings.update({
-    where: { userId: user.id },
-    data: settingsData,
-  });
-
-  revalidatePath("/settings");
-  return normalizeSettings(settings);
 }

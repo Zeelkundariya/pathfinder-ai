@@ -1,8 +1,13 @@
 export default function StatsCards({ resumes = [], coverLetters = [], interviews = [] }) {
+  // Defensive checks to prevent .map crashes if props are not arrays
+  const safeResumes = Array.isArray(resumes) ? resumes : [];
+  const safeCoverLetters = Array.isArray(coverLetters) ? coverLetters : [];
+  const safeInterviews = Array.isArray(interviews) ? interviews : [];
+
   const bestAtsScore = Math.max(
     0,
-    ...resumes.map((r) => r.atsScore || 0),
-    ...resumes.map((r) => r.score || 0) // fallback field name
+    ...safeResumes.map((r) => r.atsScore || 0),
+    ...safeResumes.map((r) => r.score || 0) // fallback field name
   );
 
   const getAtsColor = (score) => {
@@ -13,14 +18,14 @@ export default function StatsCards({ resumes = [], coverLetters = [], interviews
   };
 
   const stats = [
-    { label: "Resumes Created", value: resumes.length },
-    { label: "Mock Interviews", value: interviews.length },
+    { label: "Resumes Created", value: safeResumes.length },
+    { label: "Mock Interviews", value: safeInterviews.length },
     { 
       label: "Best ATS Score", 
       value: bestAtsScore > 0 ? `${bestAtsScore}%` : "0%",
       color: getAtsColor(bestAtsScore)
     },
-    { label: "Cover Letters", value: coverLetters.length },
+    { label: "Cover Letters", value: safeCoverLetters.length },
   ];
 
   return (

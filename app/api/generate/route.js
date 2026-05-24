@@ -108,7 +108,7 @@ export async function POST(request) {
       );
     }
 
-    if (user.saveChatHistory) {
+    if (user?.saveChatHistory ?? true) {
       await db.message.create({
         data: {
           conversationId,
@@ -177,7 +177,7 @@ Rules:
         }
 
         if (conversationId && fullResponse.trim()) {
-          if (user.saveChatHistory) {
+          if (user?.saveChatHistory ?? true) {
             await db.message.create({
               data: {
                 conversationId,

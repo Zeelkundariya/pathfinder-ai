@@ -66,11 +66,13 @@ export async function GET(request) {
       },
     });
 
-    return NextResponse.json({ conversations });
+    return NextResponse.json({
+      conversations: Array.isArray(conversations) ? conversations : [],
+    });
   } catch (error) {
     console.error("Error searching conversations:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { conversations: [], error: "Internal Server Error" },
       { status: 500 }
     );
   }

@@ -97,7 +97,7 @@ export default function AIAssistant() {
       const data = await res.json();
 
       if (res.ok) {
-        setConversations(data);
+        setConversations(Array.isArray(data) ? data : data.conversations ?? []);
       }
     } catch (error) {
       console.error("Failed to fetch conversations:", error);
@@ -113,7 +113,7 @@ export default function AIAssistant() {
 
       if (res.ok) {
         setActiveConversationId(id);
-        setMessages(data.messages || []);
+        setMessages(Array.isArray(data.messages) ? data.messages : []);
         reset();
       }
     } catch (error) {
@@ -228,7 +228,7 @@ export default function AIAssistant() {
           const res = await fetch(`/api/conversations/search?q=${encodeURIComponent(searchTerm.trim())}`);
           if (res.ok) {
             const data = await res.json();
-            setConversations(data.conversations);
+            setConversations(Array.isArray(data.conversations) ? data.conversations : []);
           }
         } catch (error) {
           console.error("Failed to search conversations:", error);
@@ -461,7 +461,7 @@ export default function AIAssistant() {
                 </p>
               </div>
             ) : (
-              conversations.map((conv) => (
+              (Array.isArray(conversations) ? conversations : []).map((conv) => (
                 <div
                   key={conv.id}
                   className={`

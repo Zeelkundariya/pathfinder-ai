@@ -31,11 +31,13 @@ export async function GET() {
       },
     });
 
-    return Response.json(conversations);
+    return Response.json({
+      conversations: Array.isArray(conversations) ? conversations : [],
+    });
   } catch (error) {
     console.error("GET conversations error:", error);
     return Response.json(
-      { error: "Failed to fetch conversations" },
+      { conversations: [], error: "Failed to fetch conversations" },
       { status: 500 }
     );
   }
