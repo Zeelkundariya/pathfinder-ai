@@ -218,7 +218,7 @@ const isDarkMode = resolvedTheme === "dark";
 </section>
 
       {/* ─────────────  TESTIMONIALS  ───────────── */}
-      <section className="w-full  py-12 md:py-24">
+      <section id = "feedback" className="w-full  py-12 md:py-24">
         <div className="container mx-auto px-4 md:px-6">
           <motion.h2
             {...fadeUp()}
@@ -268,7 +268,7 @@ const isDarkMode = resolvedTheme === "dark";
       </section>
 
       {/* ───────────────  FAQ  ─────────────── */}
-      <section className="w-full py-12 md:py-24">
+      <section id = "question" className="w-full py-12 md:py-24">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             {...fadeUp()}
@@ -312,7 +312,7 @@ const isDarkMode = resolvedTheme === "dark";
       </section>
 
       {/* ───────────────  CTA  ─────────────── */}
-      <section className="w-full">
+      <section id = "contact" className="w-full">
         <motion.div
           {...fadeUp()}
           className="gradient mx-auto rounded-lg py-24"

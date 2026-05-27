@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { FaBars, FaTimes } from "react-icons/fa";
+
+
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -47,6 +50,8 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [clerkKeyless, setClerkKeyless] = useState(false);
+    const [open, setOpen] = useState(false);
+
 
   const isHomePage = pathname === "/";
 
@@ -118,22 +123,15 @@ export default function Header() {
   };
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "bg-background/80 backdrop-blur-xl border-b border-border shadow-sm"
-          : "bg-transparent"
-      }`}
-    >
+    <header  className="fixed top-0 left-0 right-0 z-50">
       {clerkKeyless && (
         <div className="w-full bg-yellow-400/90 text-yellow-900 text-sm py-1 text-center">
           Clerk running in keyless dev mode — auth is disabled locally.
         </div>
       )}
-
-      <nav className="container mx-auto flex h-16 items-center justify-between px-6">
-        {/* Logo + Brand */}
-        <Link href="/" className="flex items-center gap-3 group">
+      <nav className="container mx-auto px-3 md:px-4 lg:px-6 h-16 flex items-center justify-between">
+        {/* Logo */}
+        <Link href="/">
           <Image
             src={logoSrc}
             alt="Pathfinder AI Logo"
@@ -171,9 +169,15 @@ export default function Header() {
           </div>
         )}
 
-        {/* Right Side */}
+      
         <div className="flex items-center gap-3">
           <ModeToggle />
+          <button
+  className="lg:hidden text-xl"
+  onClick={() => setOpen(!open)}
+>
+  {open ? <FaTimes /> : <FaBars />}
+</button>
 
           <SignedIn>
             <Button
@@ -205,7 +209,94 @@ export default function Header() {
             />
           </SignedIn>
         </div>
+      
       </nav>
-    </header>
-  );
-}
+{/* Mobile Menu */}
+  <div
+    className={`lg:hidden absolute top-16 left-0 w-full transition-all duration-300 ease-in-out ${
+      open
+        ? "opacity-100 visible translate-y-0"
+        : "opacity-0 invisible -translate-y-5"
+    }`}
+  >
+    <div className="mx-4 mt-3 rounded-2xl border border-white/10 bg-white/10 dark:bg-black/40 backdrop-blur-xl shadow-2xl p-6">
+      
+      <ul className="flex flex-col gap-5 text-base font-medium">
+        
+        <li>
+          <a
+            href="#home"
+            className="block rounded-lg px-4 py-3 hover:bg-cyan-500/10 hover:text-cyan-400 transition"
+            onClick={() => setOpen(false)}
+          >
+            Home
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="#features"
+            className="block rounded-lg px-4 py-3 hover:bg-cyan-500/10 hover:text-cyan-400 transition"
+            onClick={() => setOpen(false)}
+          >
+            Features
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="#about"
+            className="block rounded-lg px-4 py-3 hover:bg-cyan-500/10 hover:text-cyan-400 transition"
+            onClick={() => setOpen(false)}
+          >
+            About
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="#feedback"
+            className="block rounded-lg px-4 py-3 hover:bg-cyan-500/10 hover:text-cyan-400 transition"
+            onClick={() => setOpen(false)}
+          >
+            Feedback
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="#question"
+            className="block rounded-lg px-4 py-3 hover:bg-cyan-500/10 hover:text-cyan-400 transition"
+            onClick={() => setOpen(false)}
+          >
+            F&Q
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="#contact"
+            className="block rounded-lg px-4 py-3 hover:bg-cyan-500/10 hover:text-cyan-400 transition"
+            onClick={() => setOpen(false)}
+          >
+            Contact Us
+          </a>
+        </li>
+      </ul>
+
+      {/* Mobile Buttons */}
+      <div className="mt-6 flex flex-col gap-3">
+        
+
+        <SignedOut>
+          <SignInButton>
+            <Button className="w-full">Sign In</Button>
+          </SignInButton>
+        </SignedOut>
+      </div>
+    </div>
+  </div>
+  
+      </header>
+    );
+  }
