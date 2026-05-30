@@ -1,10 +1,19 @@
 import { respondError, ERROR_CODES } from "@/lib/api/error-handler";
 import { generateJsonExport } from "@/lib/export/json-export";
+import { generateMarkdownExport } from "@/lib/export/markdown-export";
 import { getOwnedConversation } from "@/lib/conversation/getConversation";
 
 
 export async function GET(request, context) {
   const params = await context.params;
+  const format =
+    new URL(request.url).searchParams.get("format") || "json";
+    if (!["json", "md"].includes(format)) {
+        return respondError(
+            ERROR_CODES.VALIDATION_ERROR,
+            "Supported formats are json and md"
+        );
+    }
 
   try {
     const result = await getOwnedConversation(params.conversationId);
@@ -22,7 +31,19 @@ export async function GET(request, context) {
       );
     }
 
-    const jsonData = generateJsonExport(conversation);
+    let exportData;
+    let contentType;
+    let fileExtension;
+
+    if (format === "md") {
+        exportData = generateMarkdownExport(conversation);
+        contentType = "text/markdown";
+        fileExtension = "md";
+    } else {
+        exportData = generateJsonExport(conversation);
+        contentType = "application/json";
+        fileExtension = "json";
+    }
 
     // TODO: Create ExportRecord and AuditLog entries
     // after migrations are applied.
@@ -30,15 +51,16 @@ export async function GET(request, context) {
     console.log("Conversation exported", {
     userId: user.id,
     conversationId: conversation.id,
-    format: "json",
+    format,
     });
 
-    return new Response(jsonData, {
+    return new Response(exportData, {
       status: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="${conversation.title}.json"`,
-      },
+        "Content-Type": contentType,
+        "Content-Disposition":
+            `attachment; filename="${conversation.title}.${fileExtension}"`,
+        },
     });
   } catch (error) {
     console.error("Export conversation error:", error);
