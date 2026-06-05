@@ -86,14 +86,11 @@ export async function DELETE(request, context) {
     });
 
     if (count === 0) {
-      return respondError(ERROR_CODES.RESOURCE_NOT_FOUND, "Conversation not found");
+      return respondError(
+        ERROR_CODES.RESOURCE_NOT_FOUND,
+        "Conversation not found"
+      );
     }
-
-    await db.conversation.delete({
-      where: {
-        id: idValidation.data,
-      },
-    });
 
     return Response.json({ success: true });
   } catch (error) {
