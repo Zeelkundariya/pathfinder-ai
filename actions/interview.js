@@ -178,7 +178,6 @@ ${categoryIntro}
 
 Generate EXACTLY 10 UNIQUE MCQ questions.`,
     untrustedData: [
-      { label: "category", value: category, maxLength: 200 },
       { label: "industry", value: user.industry || "software", maxLength: 200 },
       { label: "skills", value: normalizedSkills.join(", ") || "Not specified", maxLength: 1000 },
       { label: "category", value: validatedCategory, maxLength: 200 },
