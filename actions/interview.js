@@ -18,12 +18,13 @@ export async function generateQuiz(category = "Technical") {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
+  const categoryValidation = validateInput(quizCategorySchema, { category });
+  if (!categoryValidation.success) return { success: false, errors: categoryValidation.errors };
+
   const quizLimit = await checkRateLimit(userId, "quiz");
   if (!quizLimit.allowed) {
     throw new Error(`Quiz generation limit reached. Resets in ${formatResetTime(quizLimit.resetAt)}.`);
   }
-  const categoryValidation = validateInput(quizCategorySchema, { category });
-  if (!categoryValidation.success) return { success: false, errors: categoryValidation.errors };
 
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
@@ -116,14 +117,14 @@ Return ONLY a valid JSON object matching this schema. Do not output any markdown
 export async function saveQuizResult(questions, answers, category = "Technical") {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
-  
+
+  const validation = validateInput(quizResultSaveSchema, { questions, answers, category });
+  if (!validation.success) return { success: false, errors: validation.errors };
+
   const feedbackLimit = await checkRateLimit(userId, "quizFeedback");
   if (!feedbackLimit.allowed) {
     throw new Error(`Quiz feedback limit reached. Resets in ${formatResetTime(feedbackLimit.resetAt)}.`);
   }
-
-  const validation = validateInput(quizResultSaveSchema, { questions, answers, category });
-  if (!validation.success) return { success: false, errors: validation.errors };
 
   const {
     questions: validatedQuestions,
