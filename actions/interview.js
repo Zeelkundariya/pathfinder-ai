@@ -195,7 +195,8 @@ export async function saveQuizResult(questions, answers, category = "Technical")
       improvementTip = tipResult.response.text().trim();
     } catch (e) {
       console.error("Failed to generate custom AI improvement tip:", e);
-      improvementTip = "Focus on reviewing core programming concepts and regular system design patterns to strengthen your skills.";
+      const industryText = user.industry ? `in ${user.industry.toLowerCase()}` : "in your field";
+      improvementTip = `Focus on reviewing core ${validatedCategory.toLowerCase()} concepts and typical industry practices ${industryText} to strengthen your skills.`;
     }
   }
 
