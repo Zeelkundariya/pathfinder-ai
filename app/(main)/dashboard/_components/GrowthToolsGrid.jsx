@@ -7,7 +7,7 @@ import {
   Flame, Linkedin, Star, Video, LayoutList, Lightbulb, 
   DollarSign, Calculator, Send, ArrowRightLeft, CalendarClock,
   Coffee, ShieldAlert, Code2, HeartPulse, Rocket,
-  Home, Workflow, CalendarHeart, Globe, MapPin, Users, Flag, HandCoins, Target, LineChart, Brain, BookOpen, ListTodo, Mic, Scale, Route
+  Home, Workflow, CalendarHeart, Globe, MapPin, Users, Flag, HandCoins, Target, LineChart, Brain, BookOpen, ListTodo, Mic, Scale, Route, Feather
 } from "lucide-react";
 
 const TOOL_CATEGORIES = [
@@ -33,6 +33,7 @@ const TOOL_CATEGORIES = [
       { name: "Behavioral Prep", desc: "Beat personality tests", icon: BrainCircuit, color: "bg-rose-500/10 text-rose-500 border-rose-500/20", href: "/behavioral-prep" },
       { name: "Coffee Chat", desc: "Mock networking", icon: Coffee, color: "bg-amber-500/10 text-amber-500 border-amber-500/20", href: "/coffee-chat" },
       { name: "Take-Home Grader", desc: "Ace the technical test", icon: Code2, color: "bg-violet-500/10 text-violet-500 border-violet-500/20", href: "/assignment-grader" },
+      { name: "Failure Re-framer", desc: "Turn setbacks to stories", icon: ShieldAlert, color: "bg-rose-500/10 text-rose-500 border-rose-500/20", href: "/failure-reframer" },
     ]
   },
   {
@@ -43,6 +44,7 @@ const TOOL_CATEGORIES = [
       { name: "Offer Comparer", desc: "Total comp calculator", icon: Calculator, color: "bg-teal-500/10 text-teal-500 border-teal-500/20", href: "/offer-comparer" },
       { name: "Networking Emails", desc: "Cold outreach", icon: Send, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", href: "/networking" },
       { name: "Email Assistant", desc: "Recruiter replies", icon: Mail, color: "bg-violet-500/10 text-violet-500 border-violet-500/20", href: "/email-assistant" },
+      { name: "Diplomacy Filter", desc: "Professional polish", icon: Feather, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", href: "/professional-polisher" },
       { name: "Equity Decoder", desc: "Value your options", icon: Calculator, color: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", href: "/equity-decoder" },
       { name: "Portfolio Ideas", desc: "Stand out projects", icon: Lightbulb, color: "bg-amber-500/10 text-amber-500 border-amber-500/20", href: "/project-ideas" },
       { name: "Decision Matrix", desc: "Compare job offers", icon: Scale, color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", href: "/decision-matrix" },

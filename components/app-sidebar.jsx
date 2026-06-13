@@ -58,7 +58,8 @@ import {
   BookOpen,
   ListTodo,
   Scale,
-  Route
+  Route,
+  Feather
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,7 @@ const MENU_GROUPS = [
       { href: "/behavioral-prep", label: "Behavioral Prep", icon: <BrainCircuit className="h-4 w-4 text-rose-500" /> },
       { href: "/coffee-chat", label: "Coffee Chat", icon: <Coffee className="h-4 w-4 text-amber-500" /> },
       { href: "/assignment-grader", label: "Take-Home Grader", icon: <Code2 className="h-4 w-4 text-violet-500" /> },
+      { href: "/failure-reframer", label: "Failure Re-framer", icon: <ShieldAlert className="h-4 w-4 text-rose-500" /> },
     ]
   },
   {
@@ -101,8 +103,9 @@ const MENU_GROUPS = [
       { href: "/job-tracker", label: "Job Tracker", icon: <LayoutList className="h-4 w-4 text-green-500" /> },
       { href: "/salary-negotiation", label: "Salary Coach", icon: <DollarSign className="h-4 w-4 text-emerald-500" /> },
       { href: "/offer-comparer", label: "Offer Comparer", icon: <Calculator className="h-4 w-4 text-teal-500" /> },
-      { href: "/networking", label: "Networking", icon: <Send className="h-4 w-4 text-blue-500" /> },
+      { href: "/networking", label: "Networking Emails", icon: <Send className="h-4 w-4 text-blue-500" /> },
       { href: "/email-assistant", label: "Email Assistant", icon: <Mail className="h-4 w-4 text-violet-500" /> },
+      { href: "/professional-polisher", label: "Diplomacy Filter", icon: <Feather className="h-4 w-4 text-blue-500" /> },
       { href: "/equity-decoder", label: "Equity Decoder", icon: <Calculator className="h-4 w-4 text-indigo-500" /> },
       { href: "/project-ideas", label: "Portfolio Ideas", icon: <Lightbulb className="h-4 w-4 text-amber-500" /> },
       { href: "/decision-matrix", label: "Offer Decision Matrix", icon: <Scale className="h-4 w-4 text-cyan-500" /> },

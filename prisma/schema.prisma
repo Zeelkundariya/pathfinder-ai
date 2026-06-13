@@ -90,6 +90,8 @@ model User {
   meetingAgendas       MeetingAgenda[]
   skillGapAnalyses     SkillGapAnalysis[]
   decisionMatrices     DecisionMatrix[]
+  professionalPolishers ProfessionalPolisher[]
+  failureReframes      FailureReframe[]
   settings             UserSettings?
   exportRecords ExportRecord[]
   auditLogs     AuditLog[]
@@ -680,6 +682,11 @@ model IkigaiDiscovery {
   @@index([userId])
 <<<<<<< Updated upstream
 =======
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
 }
 
 model PerformanceReview {
@@ -767,6 +774,32 @@ model DecisionMatrix {
   optionB        String   @db.Text
   values         String   @db.Text
   matrixData     Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ProfessionalPolisher {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawDraft       String   @db.Text
+  context        String   @db.Text
+  audience       String   @db.Text
+  polishedData   Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model FailureReframe {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  situation      String   @db.Text
+  impact         String   @db.Text
+  feelings       String   @db.Text
+  reframeData    Json
   createdAt      DateTime @default(now())
 
   @@index([userId])
