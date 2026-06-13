@@ -83,8 +83,14 @@ model User {
   toxicWorkplaces      ToxicWorkplaceEscape[]
   freelanceRates       FreelanceRate[]
   ikigaiDiscoveries    IkigaiDiscovery[]
+  performanceReviews   PerformanceReview[]
+  imposterSyndromes    ImposterSyndrome[]
+  managerReadmes       ManagerReadme[]
+  elevatorPitches      ElevatorPitch[]
+  meetingAgendas       MeetingAgenda[]
+  skillGapAnalyses     SkillGapAnalysis[]
+  decisionMatrices     DecisionMatrix[]
   settings             UserSettings?
-
   exportRecords ExportRecord[]
   auditLogs     AuditLog[]
 }
@@ -669,6 +675,98 @@ model IkigaiDiscovery {
   skills         String   @db.Text
   marketNeeds    String   @db.Text
   ikigaiData     Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+<<<<<<< Updated upstream
+=======
+}
+
+model PerformanceReview {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievements   String   @db.Text
+  challenges     String   @db.Text
+  goals          String   @db.Text
+  reviewData     Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ImposterSyndrome {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doubts         String   @db.Text
+  achievements   String   @db.Text
+  reframeData    Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ManagerReadme {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  style          String   @db.Text
+  boundaries     String   @db.Text
+  feedback       String   @db.Text
+  readmeData     Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ElevatorPitch {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  background     String   @db.Text
+  goals          String   @db.Text
+  audience       String   @db.Text
+  pitchData      Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model MeetingAgenda {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meetingType    String   @db.Text
+  topic          String   @db.Text
+  duration       String   @db.Text
+  agendaData     Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model SkillGapAnalysis {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentRole    String   @db.Text
+  dreamRole      String   @db.Text
+  currentSkills  String   @db.Text
+  analysisData   Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model DecisionMatrix {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  optionA        String   @db.Text
+  optionB        String   @db.Text
+  values         String   @db.Text
+  matrixData     Json
   createdAt      DateTime @default(now())
 
   @@index([userId])

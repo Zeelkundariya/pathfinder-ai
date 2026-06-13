@@ -52,7 +52,13 @@ import {
   Users,
   Flag,
   HandCoins,
-  Target
+  Target,
+  LineChart,
+  Brain,
+  BookOpen,
+  ListTodo,
+  Scale,
+  Route
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -99,6 +105,7 @@ const MENU_GROUPS = [
       { href: "/email-assistant", label: "Email Assistant", icon: <Mail className="h-4 w-4 text-violet-500" /> },
       { href: "/equity-decoder", label: "Equity Decoder", icon: <Calculator className="h-4 w-4 text-indigo-500" /> },
       { href: "/project-ideas", label: "Portfolio Ideas", icon: <Lightbulb className="h-4 w-4 text-amber-500" /> },
+      { href: "/decision-matrix", label: "Offer Decision Matrix", icon: <Scale className="h-4 w-4 text-cyan-500" /> },
     ]
   },
   {
@@ -123,6 +130,11 @@ const MENU_GROUPS = [
       { href: "/toxic-workplace", label: "Toxic Workplace Escape", icon: <Flag className="h-4 w-4 text-red-500" /> },
       { href: "/freelance-rate", label: "Freelance Rate Calculator", icon: <HandCoins className="h-4 w-4 text-emerald-500" /> },
       { href: "/ikigai", label: "Ikigai Builder", icon: <Target className="h-4 w-4 text-violet-500" /> },
+      { href: "/performance-review", label: "Performance Review Writer", icon: <LineChart className="h-4 w-4 text-blue-500" /> },
+      { href: "/imposter-syndrome", label: "Imposter Syndrome Coach", icon: <Brain className="h-4 w-4 text-rose-500" /> },
+      { href: "/manager-readme", label: "Manager README Builder", icon: <BookOpen className="h-4 w-4 text-cyan-500" /> },
+      { href: "/meeting-agenda", label: "Meeting Agenda Builder", icon: <ListTodo className="h-4 w-4 text-teal-500" /> },
+      { href: "/skill-gap", label: "Skill Gap Analyzer", icon: <Route className="h-4 w-4 text-violet-500" /> },
     ]
   },
   {
