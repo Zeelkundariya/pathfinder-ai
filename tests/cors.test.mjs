@@ -1,4 +1,11 @@
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
+
+vi.mock("../lib/env.js", () => ({
+  getEnv: () => ({
+    ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+    CORS_ORIGIN: process.env.CORS_ORIGIN,
+  }),
+}));
 
 import {
   getCorsAllowedOrigins,
