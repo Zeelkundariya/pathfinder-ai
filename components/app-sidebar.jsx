@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useScrollLock } from "@/hooks/use-scroll-lock";
 
 const MENU_GROUPS = [
   {
@@ -140,6 +141,8 @@ export default function AppSidebar() {
   
   const [isMobile, setIsMobile] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+
+  useScrollLock(isMobile && isOpen);
 
   useEffect(() => {
     const handleResize = () => {
