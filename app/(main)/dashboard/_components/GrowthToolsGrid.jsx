@@ -7,19 +7,20 @@ import {
   Flame, Linkedin, Star, Video, LayoutList, Lightbulb, 
   DollarSign, Calculator, Send, ArrowRightLeft, CalendarClock,
   Coffee, ShieldAlert, Code2, HeartPulse, Rocket,
-  Home, Workflow, CalendarHeart, Globe, MapPin, Users, Flag, HandCoins, Target
+  Home, Workflow, CalendarHeart, Globe, MapPin, Users, Flag, HandCoins, Target, LineChart, Brain, BookOpen, ListTodo, Mic
 } from "lucide-react";
 
 const TOOL_CATEGORIES = [
   {
     category: "Resume & Identity",
     tools: [
-      { name: "Resume Builder", desc: "Professional templates", icon: FileText, color: "bg-amber-500/10 text-amber-500 border-amber-500/20", href: "/resume" },
+      { name: "Resume Builder", desc: "Professional templates", icon: FileText, color: "bg-amber-500/10 text-amber-500 border-amber-500/20", href: "/resume-builder" },
       { name: "ATS Analyzer", desc: "Score resume vs JD", icon: ScanSearch, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", href: "/ats-analyzer" },
       { name: "Resume Roast", desc: "Brutal AI feedback", icon: Flame, color: "bg-red-500/10 text-red-500 border-red-500/20", href: "/resume-roast" },
       { name: "Cover Letter", desc: "Tailored for success", icon: Mail, color: "bg-rose-500/10 text-rose-500 border-rose-500/20", href: "/ai-cover-letter" },
       { name: "LinkedIn Optimizer", desc: "Profile audits", icon: ScanSearch, color: "bg-[#0A66C2]/10 text-[#0A66C2] border-[#0A66C2]/20", href: "/linkedin-optimizer" },
       { name: "LinkedIn Posts", desc: "Viral content creator", icon: Linkedin, color: "bg-[#0A66C2]/10 text-[#0A66C2] border-[#0A66C2]/20", href: "/linkedin-post" },
+      { name: "Elevator Pitch", desc: "Own your career story", icon: Mic, color: "bg-orange-500/10 text-orange-500 border-orange-500/20", href: "/elevator-pitch" },
     ]
   },
   {
@@ -67,6 +68,10 @@ const TOOL_CATEGORIES = [
       { name: "Toxic Workplace", desc: "Discreet escape plans", icon: Flag, color: "bg-red-500/10 text-red-500 border-red-500/20", href: "/toxic-workplace" },
       { name: "Freelance Rate", desc: "Calculate your worth", icon: HandCoins, color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", href: "/freelance-rate" },
       { name: "Ikigai Builder", desc: "Find your life purpose", icon: Target, color: "bg-violet-500/10 text-violet-500 border-violet-500/20", href: "/ikigai" },
+      { name: "Performance Review", desc: "Ace your assessment", icon: LineChart, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", href: "/performance-review" },
+      { name: "Imposter Coach", desc: "Rewrite the narrative", icon: Brain, color: "bg-rose-500/10 text-rose-500 border-rose-500/20", href: "/imposter-syndrome" },
+      { name: "Manager README", desc: "Lead with clarity", icon: BookOpen, color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", href: "/manager-readme" },
+      { name: "Meeting Agenda", desc: "Lead with purpose", icon: ListTodo, color: "bg-teal-500/10 text-teal-500 border-teal-500/20", href: "/meeting-agenda" },
       { name: "Explore Careers", desc: "Discover & Compare", icon: Compass, color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20", href: "/explore" },
     ]
   }
