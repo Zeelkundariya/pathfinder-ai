@@ -127,7 +127,8 @@ describe("useStreamFetch", () => {
 
   it("handles network failures via direct fetch mock (not MSW)", async () => {
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error("Network failure"));
+    const fetchMock = vi.fn().mockRejectedValue(new Error("Network failure"));
+    vi.stubGlobal("fetch", fetchMock);
 
     try {
       const { result } = renderHook(() => useStreamFetch());
@@ -144,7 +145,60 @@ describe("useStreamFetch", () => {
       expect(result.current.streamedText).toBe("");
       expect(result.current.finalText).toBe("");
     } finally {
-      globalThis.fetch = originalFetch;
+      vi.stubGlobal("fetch", originalFetch);
     }
+  });
+
+  it("aborts the request when reset() is called", async () => {
+    let requestAborted = false;
+    server.use(
+      http.post("http://localhost/api/generate", ({ request }) => {
+        request.signal.addEventListener("abort", () => {
+          requestAborted = true;
+        });
+        // Hang the request
+        return new Promise(() => {});
+      })
+    );
+
+    const { result } = renderHook(() => useStreamFetch());
+
+    let outcomePromise;
+    await act(async () => {
+      outcomePromise = result.current.startStream("Slow request");
+      // Wait a bit for the fetch to start
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      result.current.reset();
+    });
+
+    const outcome = await outcomePromise;
+    expect(outcome.status).toBe("aborted");
+    expect(requestAborted).toBe(true);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("aborts the request when the component unmounts", async () => {
+    let requestAborted = false;
+    server.use(
+      http.post("http://localhost/api/generate", ({ request }) => {
+        request.signal.addEventListener("abort", () => {
+          requestAborted = true;
+        });
+        return new Promise(() => {});
+      })
+    );
+
+    const { result, unmount } = renderHook(() => useStreamFetch());
+
+    let outcomePromise;
+    await act(async () => {
+      outcomePromise = result.current.startStream("Unmounting request");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      unmount();
+    });
+
+    const outcome = await outcomePromise;
+    expect(outcome.status).toBe("aborted");
+    expect(requestAborted).toBe(true);
   });
 });
