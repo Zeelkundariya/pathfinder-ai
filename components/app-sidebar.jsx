@@ -56,7 +56,9 @@ import {
   LineChart,
   Brain,
   BookOpen,
-  Activity
+  Activity,
+  Handshake,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -132,6 +134,8 @@ const MENU_GROUPS = [
       { href: "/performance-review", label: "Performance Review Writer", icon: <LineChart className="h-4 w-4 text-blue-500" /> },
       { href: "/imposter-syndrome", label: "Imposter Syndrome Coach", icon: <Brain className="h-4 w-4 text-rose-500" /> },
       { href: "/manager-readme", label: "Manager README Builder", icon: <BookOpen className="h-4 w-4 text-cyan-500" /> },
+      { href: "/conflict-resolver", label: "Conflict Resolver", icon: <Handshake className="h-4 w-4 text-rose-500" /> },
+      { href: "/micro-habits", label: "Micro-Habit Planner", icon: <Zap className="h-4 w-4 text-emerald-500" /> },
     ]
   },
   {

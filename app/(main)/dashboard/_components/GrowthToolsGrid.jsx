@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -31,7 +31,9 @@ import {
   Users,
   BookOpen,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Handshake,
+  Zap
 } from "lucide-react";
 
 const TOOL_CATEGORIES = [
@@ -84,6 +86,8 @@ const TOOL_CATEGORIES = [
       { name: "Culture Fit", desc: "Company matching", icon: Users, color: "bg-pink-500/10 text-pink-500 border-pink-500/20", href: "/culture-fit" },
       { name: "Offer Risk", desc: "Avoid bad moves", icon: ShieldCheck, color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", href: "/offer-risk" },
       { name: "Career Library", desc: "Guides and playbooks", icon: BookOpen, color: "bg-zinc-500/10 text-zinc-500 border-zinc-500/20", href: "/career-library" },
+      { name: "Conflict Resolver", desc: "Navigate tough chats", icon: Handshake, color: "bg-rose-500/10 text-rose-500 border-rose-500/20", href: "/conflict-resolver" },
+      { name: "Micro-Habit Planner", desc: "Small steps to goals", icon: Zap, color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", href: "/micro-habits" },
     ]
   }
 ];

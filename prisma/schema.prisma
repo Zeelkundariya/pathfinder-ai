@@ -88,6 +88,8 @@ model User {
   imposterSyndromes    ImposterSyndrome[]
   managerReadmes       ManagerReadme[]
   skillGapAnalyses     SkillGapAnalysis[]
+  conflictResolutions  ConflictResolution[]
+  microHabitPlans      MicroHabitPlan[]
 
   exportRecords ExportRecord[]
   auditLogs     AuditLog[]
@@ -728,4 +730,29 @@ model SkillGapAnalysis {
   analysis         Json
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+model ConflictResolution {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conflictType   String
+  otherParty     String
+  situation      String   @db.Text
+  resolutionData Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model MicroHabitPlan {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal           String   @db.Text
+  timeAvailable  String
+  habitData      Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
 }
