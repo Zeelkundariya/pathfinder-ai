@@ -32,6 +32,37 @@ describe("industry insights helper", () => {
     vi.clearAllMocks();
   });
 
+  it("ensures no user context is passed to the prompt builder", async () => {
+    mocks.cachedGenerateGeminiContent.mockResolvedValue({
+      response: {
+        text: () => JSON.stringify({
+          salaryRanges: [{ role: "Role", min: 1, max: 2, median: 1.5, location: "Loc" }],
+          growthRate: 1,
+          demandLevel: "High",
+          topSkills: ["A"],
+          marketOutlook: "Positive",
+          keyTrends: ["B"],
+          recommendedSkills: ["C"],
+        }),
+      },
+    });
+
+    await generateIndustryInsightData("technology");
+
+    // buildSecurePrompt is called by buildIndustryInsightPrompt
+    // We check that it was called with clean context
+    expect(mocks.buildSecurePrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.stringContaining("Industry Context:"),
+      })
+    );
+    expect(mocks.buildSecurePrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.not.stringContaining("User Profile Context:"),
+      })
+    );
+  });
+
   it("uses grounded sources when Gemini search succeeds", async () => {
     mocks.cachedGenerateGeminiContent.mockResolvedValue({
       response: {

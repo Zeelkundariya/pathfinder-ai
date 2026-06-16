@@ -30,7 +30,7 @@ export async function updateUser(data) {
     });
 
     if (!existingInsight) {
-      precomputedInsights = await generateAIInsights(data.industry, data);
+      precomputedInsights = await generateAIInsights(data.industry);
     }
 
     const result = await db.$transaction(
