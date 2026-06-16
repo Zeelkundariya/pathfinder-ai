@@ -1,11 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
-import { enforceRateLimit } from "../lib/rate-limit.js";
+import { cleanupExpiredBuckets, enforceRateLimit } from "../lib/rate-limit.js";
 import {
   createMemoryRateLimitStore,
   createRateLimitStore,
   createRedisRateLimitStore,
+  DEFAULT_BUCKET_TTL_MS,
 } from "../lib/rate-limit/store.js";
+
+const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
+const ORIGINAL_REDIS_URL = process.env.REDIS_URL;
+
+afterEach(() => {
+  process.env.NODE_ENV = ORIGINAL_NODE_ENV;
+  if (ORIGINAL_REDIS_URL == null) {
+    delete process.env.REDIS_URL;
+  } else {
+    process.env.REDIS_URL = ORIGINAL_REDIS_URL;
+  }
+});
 
 /**
  * Minimal in-memory stand-in for a Redis client whose `eval` mirrors the
@@ -28,9 +41,9 @@ function makeFakeRedisClient() {
     },
     eval(_script, { keys, arguments: args }) {
       const key = keys[0];
-      const now = Number(args[0]);
-      const limitPerMinute = Number(args[1]);
-      const burstCapacity = Number(args[2]);
+      const limitPerMinute = Number(args[0]);
+      const burstCapacity = Number(args[1]);
+      const now = Number(args[2]);
 
       let tokens = null;
       let lastRefillAt = now;
@@ -49,26 +62,51 @@ function makeFakeRedisClient() {
       }
 
       if (tokens == null) {
-        tokens = burstCapacity;
-        lastRefillAt = now;
+        const remainingTokens = Math.max(0, burstCapacity - 1);
+        data.set(
+          key,
+          JSON.stringify({ tokens: remainingTokens, lastRefillAt: now, limitPerMinute, burstCapacity })
+        );
+        return [1, remainingTokens, 0];
       }
 
       const elapsedMinutes = (now - lastRefillAt) / 60000;
-      tokens = Math.min(burstCapacity, tokens + elapsedMinutes * limitPerMinute);
+      const refillAmount = elapsedMinutes * limitPerMinute;
+      tokens = Math.min(burstCapacity, tokens + refillAmount);
       lastRefillAt = now;
 
+      if (tokens < 1) {
+        const missingTokens = 1 - tokens;
+        const retryAfterSeconds = limitPerMinute > 0
+          ? Math.max(1, Math.ceil((missingTokens / limitPerMinute) * 60))
+          : 60;
+        data.set(
+          key,
+          JSON.stringify({ tokens, lastRefillAt, limitPerMinute, burstCapacity })
+        );
+        return [0, 0, retryAfterSeconds];
       let allowed = 0;
+      let retryAfterSeconds = 0;
+
       if (tokens >= 1) {
         tokens -= 1;
         allowed = 1;
+      } else {
+        const missingTokens = 1 - tokens;
+        retryAfterSeconds =
+          limitPerMinute > 0
+            ? Math.max(1, Math.ceil((missingTokens / limitPerMinute) * 60))
+            : 60;
       }
 
+      tokens -= 1;
       data.set(
         key,
         JSON.stringify({ tokens, lastRefillAt, limitPerMinute, burstCapacity })
       );
 
-      return [allowed, Math.floor(tokens), String(tokens)];
+      return [1, Math.floor(tokens), 0];
+      return [allowed, Math.floor(tokens), retryAfterSeconds];
     },
   };
 }
@@ -101,6 +139,30 @@ it("factory can create a redis store lazily", () => {
   });
 
   expect(store.kind).toBe("redis");
+});
+
+it("factory fails fast in production when REDIS_URL is missing", () => {
+  process.env.NODE_ENV = "production";
+  delete process.env.REDIS_URL;
+
+  expect(() =>
+    createRateLimitStore({
+      driver: "auto",
+      redisUrl: undefined,
+    })
+  ).toThrow(/REDIS_URL is required in production/i);
+});
+
+it("factory rejects memory driver in production", () => {
+  process.env.NODE_ENV = "production";
+  process.env.REDIS_URL = "redis://localhost:6379";
+
+  expect(() =>
+    createRateLimitStore({
+      driver: "memory",
+      redisUrl: process.env.REDIS_URL,
+    })
+  ).toThrow(/RATE_LIMIT_STORE=memory is not allowed in production/i);
 });
 
 it("rate limiter consumes burst capacity and then rejects", async () => {
@@ -336,3 +398,72 @@ describe.each(concurrencyStores)(
     });
   }
 );
+
+it("DEFAULT_BUCKET_TTL_MS is exported and has the expected value", () => {
+  expect(DEFAULT_BUCKET_TTL_MS).toBe(10 * 60 * 1000);
+});
+
+it("cleanupExpiredBuckets wrapper does not throw ReferenceError (the bug fix)", async () => {
+  const store = createMemoryRateLimitStore({ bucketTtlMs: 100 });
+
+  // Should not throw — this is the exact scenario that caused the bug
+  await expect(
+    cleanupExpiredBuckets(store, 2000)
+  ).resolves.toBeUndefined();
+
+  await store.close();
+});
+
+it("cleanupExpiredBuckets wrapper cleans up expired buckets via the store", async () => {
+  const store = createMemoryRateLimitStore({ bucketTtlMs: 100 });
+
+  // Set a bucket with a very old lastRefillAt (past TTL)
+  await store.setBucket("/api/generate:user:stale", {
+    tokens: 5,
+    lastRefillAt: 0,
+    limitPerMinute: 10,
+    burstCapacity: 5,
+  });
+
+  // cleanupExpiredBuckets passes DEFAULT_BUCKET_TTL_MS; the store ignores it
+  // in favor of its own bucketTtlMs, so 2000ms > 100ms TTL should evict
+  await cleanupExpiredBuckets(store, 2000);
+
+  expect(await store.getBucket("/api/generate:user:stale")).toBeNull();
+
+  await store.close();
+});
+
+it("cleanupExpiredBuckets wrapper does not remove fresh buckets", async () => {
+  const store = createMemoryRateLimitStore({ bucketTtlMs: 60_000 });
+
+  await store.setBucket("/api/generate:user:fresh", {
+    tokens: 5,
+    lastRefillAt: Date.now(),
+    limitPerMinute: 10,
+    burstCapacity: 5,
+  });
+
+  // now is the same as lastRefillAt, so bucket is fresh
+  await cleanupExpiredBuckets(store, Date.now());
+
+  const bucket = await store.getBucket("/api/generate:user:fresh");
+  expect(bucket).not.toBeNull();
+  expect(bucket.tokens).toBe(5);
+
+  await store.close();
+});
+
+it("cleanupExpiredBuckets wrapper handles store without cleanupExpiredBuckets gracefully", async () => {
+  const store = { kind: "custom" };
+
+  await expect(
+    cleanupExpiredBuckets(store)
+  ).resolves.toBeUndefined();
+});
+
+it("cleanupExpiredBuckets wrapper handles null store gracefully", async () => {
+  await expect(
+    cleanupExpiredBuckets(null)
+  ).resolves.toBeUndefined();
+});

@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { respondError, ERROR_CODES } from "@/lib/api/error-handler";
+import { conversationCreateSchema } from "@/lib/schemas/forms";
 
 export async function GET() {
   try {
@@ -23,9 +24,6 @@ export async function GET() {
     const conversations = await db.conversation.findMany({
       where: {
         userId: user.id,
-      },
-      include: {
-        messages: true,
       },
       orderBy: {
         updatedAt: "desc",
@@ -59,9 +57,24 @@ export async function POST(request) {
       return respondError(ERROR_CODES.USER_NOT_FOUND);
     }
 
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return respondError(ERROR_CODES.VALIDATION_ERROR, "Invalid request body");
+    }
 
-    const { title, firstMessage } = body;
+    const validation = conversationCreateSchema.safeParse(body);
+
+    if (!validation.success) {
+      return respondError(
+        ERROR_CODES.VALIDATION_ERROR,
+        "Invalid conversation payload",
+        validation.error.flatten().fieldErrors
+      );
+    }
+
+    const { title, firstMessage } = validation.data;
 
     const conversation = await db.conversation.create({
       data: {
@@ -72,7 +85,7 @@ export async function POST(request) {
             ? [
                 {
                   role: "user",
-                  content: firstMessage,
+                  content: firstMessage.content,
                 },
               ]
             : [],

@@ -3,10 +3,26 @@ import { respondError, ERROR_CODES } from "@/lib/api/error-handler";
 import { generateJsonExport } from "@/lib/export/json-export";
 import { generateMarkdownExport } from "@/lib/export/markdown-export";
 import { getOwnedConversation } from "@/lib/conversation/getConversation";
+import { validateId } from "@/lib/validate";
 
 
+/**
+ * GET handler for exporting a conversation by its ID.
+ * Supports exporting in JSON and Markdown formats.
+ * Records the export event in ExportRecord and AuditLog tables.
+ *
+ * @param {Request} request - The incoming HTTP request.
+ * @param {object} context - Context containing route params.
+ * @param {object} context.params - Route parameters.
+ * @returns {Promise<Response>} HTTP Response containing the exported file data.
+ */
 export async function GET(request, context) {
   const params = await context.params;
+  const idValidation = validateId(params.conversationId, "conversationId");
+
+  if (!idValidation.success) {
+    return respondError(ERROR_CODES.VALIDATION_ERROR, "Conversation ID is required", idValidation.errors);
+  }
   const format =
     new URL(request.url).searchParams.get("format") || "json";
     if (!["json", "md"].includes(format)) {
@@ -17,7 +33,7 @@ export async function GET(request, context) {
     }
 
   try {
-    const result = await getOwnedConversation(params.conversationId);
+    const result = await getOwnedConversation(idValidation.data);
 
     if (!result) {
       return respondError(ERROR_CODES.UNAUTHORIZED);
@@ -72,9 +88,9 @@ export async function GET(request, context) {
     ]);
 
     console.log("Conversation exported", {
-    userId: user.id,
-    conversationId: conversation.id,
-    format,
+      userId: user.id,
+      conversationId: conversation.id,
+      format,
     });
 
     return new Response(exportData, {

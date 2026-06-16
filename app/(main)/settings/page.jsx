@@ -14,7 +14,7 @@ export default async function SettingsPage() {
 
   const [{ user }, settings] = await Promise.all([
     getUserOnboardingStatus(),
-    getUserSettings(userId),
+    getUserSettings(),
   ]);
 
   return (

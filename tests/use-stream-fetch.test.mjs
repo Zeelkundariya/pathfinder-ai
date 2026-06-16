@@ -130,6 +130,7 @@ describe("useStreamFetch", () => {
   });
 
   it("handles network failures via direct fetch mock (not MSW)", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network failure"));
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network failure")));
 
     const { result } = renderHook(() => useStreamFetch());
@@ -145,5 +146,15 @@ describe("useStreamFetch", () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.streamedText).toBe("");
     expect(result.current.finalText).toBe("");
+      expect(outcome.status).toBe("error");
+      expect(outcome.error).toContain("Network failure");
+      expect(result.current.error).toContain("Network failure");
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.streamedText).toBe("");
+      expect(result.current.finalText).toBe("");
+    } finally {
+      fetchSpy.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 });

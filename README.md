@@ -316,6 +316,19 @@ Open [http://localhost:3000](http://localhost:3000). You're in.
 
 ---
 
+<!-- Fix: Corrected step numbering from 5.5 to 6 for proper sequential numbering -->
+### 6. Start the Inngest Dev Server (required for background jobs)
+
+In a **second terminal**, run:
+
+```bash
+npx inngest-cli@latest dev
+```
+
+> ⚠️ Without this, `generateIndustryInsights` and all background functions
+> will silently never fire — no error, no warning. This is a required step.
+> Get your production keys from [app.inngest.com](https://app.inngest.com).
+
 ## 🔑 Environment Variables
 
 Create `.env.local` in the root and populate with:
@@ -342,11 +355,26 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
 # ─────────────────────────────────────────────
 GEMINI_API_KEY=AIza...
 
+# Inngest (Background Job Processing)
+# Without these, background jobs like generateIndustryInsights silently never fire.
+# For local dev set both to: local
+# For production get them from: https://app.inngest.com → your app → Manage
+INNGEST_EVENT_KEY=your_inngest_event_key
+INNGEST_SIGNING_KEY=your_inngest_signing_key
+
+# ─────────────────────────────────────────────
+# RATE LIMITING (PRODUCTION)
+# ─────────────────────────────────────────────
+REDIS_URL=redis://localhost:6379
+RATE_LIMIT_STORE=auto
+
 # ─────────────────────────────────────────────
 # APP (OPTIONAL)
 # ─────────────────────────────────────────────
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+> **Rate limiting in production:** Redis is required for consistent multi-instance throttling. In production, set `REDIS_URL` and keep `RATE_LIMIT_STORE=auto` (or set `RATE_LIMIT_STORE=redis`).
 
 | Variable | Required | Description |
 |---|---|---|
@@ -358,6 +386,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 | `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` | ✅ | Redirect destination after sign-in |
 | `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL` | ✅ | Redirect destination after sign-up |
 | `GEMINI_API_KEY` | ✅ | Google Gemini API key for all AI features |
+| `REDIS_URL` | ⚪ | Redis connection string for production rate limiting |
+| `RATE_LIMIT_STORE` | ⚪ | Rate limiter driver (`auto` or `redis`) |
 | `NEXT_PUBLIC_APP_URL` | ⚪ | Base URL used in production builds |
 
 ---

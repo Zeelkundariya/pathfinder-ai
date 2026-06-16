@@ -4,6 +4,9 @@ const mocks = vi.hoisted(() => ({
   generateGeminiContent: vi.fn(),
   buildSecurePrompt: vi.fn(),
   auth: vi.fn(),
+  headers: vi.fn(),
+  enforceRateLimit: vi.fn(),
+  getRateLimitIdentifier: vi.fn(),
   db: {
     user: {
       findUnique: vi.fn(),
@@ -14,6 +17,15 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: mocks.auth,
+}));
+
+vi.mock("next/headers", () => ({
+  headers: mocks.headers,
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  enforceRateLimit: mocks.enforceRateLimit,
+  getRateLimitIdentifier: mocks.getRateLimitIdentifier,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -40,11 +52,51 @@ import { chatWithGemini } from "../actions/chat.js";
 
 describe("chatWithGemini", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     // Set up default mock for auth to return no user (null userId)
     mocks.auth.mockResolvedValue({ userId: null });
+    mocks.headers.mockResolvedValue(new Map());
+    mocks.getRateLimitIdentifier.mockReturnValue({ kind: "ip", value: "127.0.0.1" });
+    mocks.enforceRateLimit.mockResolvedValue({ allowed: true, remaining: 10, retryAfterSeconds: 0 });
   });
-  it("requires a prompt", async () => {
-    await expect(chatWithGemini("")).rejects.toThrow("Prompt is required");
+
+  it("returns validation errors for an empty prompt", async () => {
+    await expect(chatWithGemini("")).resolves.toEqual(
+      expect.objectContaining({
+        success: false,
+        errors: expect.objectContaining({
+          prompt: expect.any(Array),
+        }),
+      })
+    );
+  });
+
+  it("rejects whitespace-only prompts", async () => {
+  await expect(chatWithGemini("   ")).resolves.toEqual(
+    expect.objectContaining({
+      success: false,
+      errors: expect.objectContaining({
+        prompt: expect.any(Array),
+        }),
+      })
+    );
+  });
+
+  it("enforces rate limits", async () => {
+    mocks.enforceRateLimit.mockResolvedValue({ 
+      allowed: false, 
+      remaining: 0, 
+      retryAfterSeconds: 60 
+    });
+
+    await expect(chatWithGemini("Hello")).resolves.toEqual({
+      success: false,
+      errors: {
+        _form: ["Rate limit exceeded. Try again in 60s."]
+      }
+    });
+    expect(mocks.enforceRateLimit).toHaveBeenCalled();
+    expect(mocks.generateGeminiContent).not.toHaveBeenCalled();
   });
 
   it("wraps the prompt before sending it to Gemini", async () => {
@@ -78,9 +130,12 @@ describe("chatWithGemini", () => {
     mocks.buildSecurePrompt.mockReturnValue("secure prompt");
     mocks.generateGeminiContent.mockRejectedValue(new Error("quota exceeded"));
 
-    await expect(chatWithGemini("Help me with interviews")).rejects.toThrow(
-      "Failed to get response from Gemini AI"
-    );
+    await expect(chatWithGemini("Help me with interviews")).resolves.toEqual({
+      success: false,
+      errors: {
+        _form: ["Failed to get response from Gemini AI. Please try again."]
+      }
+    });
     expect(consoleErrorSpy).toHaveBeenCalled();
   });
 });

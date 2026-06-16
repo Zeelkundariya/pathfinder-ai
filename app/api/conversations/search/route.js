@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { respondError, ERROR_CODES } from "@/lib/api/error-handler";
+import { conversationSearchSchema } from "@/lib/schemas/forms";
 
 export async function GET(request) {
   try {
@@ -11,10 +12,14 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get("q");
+    const validation = conversationSearchSchema.safeParse({ q: searchParams.get("q") });
 
-    if (!query || typeof query !== "string" || !query.trim()) {
-      return respondError(ERROR_CODES.VALIDATION_ERROR, "Search query 'q' is required");
+    if (!validation.success) {
+      return respondError(
+        ERROR_CODES.VALIDATION_ERROR,
+        "Invalid search query",
+        validation.error.flatten().fieldErrors
+      );
     }
 
     const user = await db.user.findUnique({
@@ -27,7 +32,7 @@ export async function GET(request) {
       return respondError(ERROR_CODES.USER_NOT_FOUND);
     }
 
-    const searchKeyword = query.trim();
+    const searchKeyword = validation.data.q;
 
     const conversations = await db.conversation.findMany({
       where: {
@@ -53,6 +58,7 @@ export async function GET(request) {
       },
       include: {
         messages: {
+          take: 1,
           orderBy: {
             createdAt: "asc",
           },

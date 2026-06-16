@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, FileText, Briefcase, Sparkles, ClipboardPaste, FileUp, CheckCircle2 } from "lucide-react";
+import { Loader2, FileText, Briefcase, Sparkles, ClipboardPaste, FileUp, CheckCircle2, RotateCcw } from "lucide-react";
 
 const RESUME_MAX = 5000;
 const JD_MAX = 8000;
@@ -91,6 +91,15 @@ export default function ATSForm({ savedResumeContent, onComplete }) {
     } else {
       toast.info("No saved resume found. Build one in the Resume section first.");
     }
+  };
+
+  const handleClearForm = () => {
+    setResumeContent("");
+    setJobDescription("");
+    setJobTitle("");
+    setCompanyName("");
+    setUploadedFileName("");
+    toast.success("Form cleared successfully.");
   };
 
   const handleFile = async (file) => {
@@ -320,7 +329,18 @@ export default function ATSForm({ savedResumeContent, onComplete }) {
       </div>
 
       {/* Submit */}
-      <div className="flex justify-center pt-2">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          onClick={handleClearForm}
+          disabled={isPending || isExtracting}
+          className="min-w-[200px] h-12 text-base font-semibold flex items-center gap-2"
+        >
+          <RotateCcw className="h-5 w-5" />
+          Clear Form
+        </Button>
         <Button
           type="submit"
           size="lg"

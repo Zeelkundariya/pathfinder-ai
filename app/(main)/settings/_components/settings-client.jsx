@@ -95,7 +95,7 @@ export default function SettingsClient({ userId, user, settings }) {
 
     startTransition(async () => {
       try {
-        const updatedSettings = await updateUserSettings(userId, nextSettings);
+        const updatedSettings = await updateUserSettings(nextSettings);
         const normalizedSettings = {
           notifications: updatedSettings.notifications,
           emailAlerts: updatedSettings.emailAlerts,
