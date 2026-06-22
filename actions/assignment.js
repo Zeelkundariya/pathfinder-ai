@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
+import { buildUserLookup } from "@/lib/user-query";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
@@ -11,7 +12,7 @@ export async function gradeAssignment(promptText, solutionText) {
   const { userId } = await auth();
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
-  const user = await db.user.findUnique({ where: { clerkUserId: userId } });
+  const user = await db.user.findUnique(buildUserLookup(userId));
   if (!user) return USER_NOT_FOUND_RESPONSE;
 
   if (!promptText || !solutionText) {
@@ -62,7 +63,7 @@ export async function getAssignmentGrades() {
   const { userId } = await auth();
   if (!userId) return { success: false, data: [] };
 
-  const user = await db.user.findUnique({ where: { clerkUserId: userId } });
+  const user = await db.user.findUnique(buildUserLookup(userId));
   if (!user) return { success: false, data: [] };
 
   const records = await db.assignmentGrade.findMany({
