@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { buildUserLookup } from "@/lib/user-query";
+import { getAuthenticatedHistoryResponse } from "@/lib/history-response-auth";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
