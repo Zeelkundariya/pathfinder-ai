@@ -14,6 +14,7 @@ import { generateGeminiContent } from "@/lib/gemini";
 import { getHistoryRecords } from "@/lib/history-query";
 import { USER_NOT_FOUND_RESPONSE } from "@/lib/user-not-found";
 
+/** Grade an assignment submission against a rubric or prompt. */
 export async function gradeAssignment(promptText, solutionText) {
   const user = await getAuthenticatedHistoryUser();
 
@@ -61,6 +62,7 @@ export async function gradeAssignment(promptText, solutionText) {
     console.error("Assignment Grader Error:", error);
     return { success: false, errors: { _form: [error.message || "Failed to grade assignment"] } };
   }
+/** Retrieve all graded assignments for the current user. */
 }
 
 export async function getAssignmentGrades() {

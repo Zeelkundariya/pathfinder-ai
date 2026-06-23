@@ -12,6 +12,7 @@ import { generateGeminiContent } from "@/lib/gemini";
 import { USER_NOT_FOUND_RESPONSE } from "@/lib/user-not-found";
 import { CREATED_AT_DESC } from "@/lib/sort-config";
 
+/** Assess burnout risk based on user survey responses. */
 export async function assessBurnout(symptoms, workload) {
   const { userId } = await auth();
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
@@ -64,6 +65,7 @@ export async function assessBurnout(symptoms, workload) {
     return { success: false, errors: { _form: [error.message || "Failed to assess burnout"] } };
   }
 }
+/** Retrieve all burnout assessments for the current user. */
 
 export async function getBurnoutAssessments() {
   const { userId } = await auth();

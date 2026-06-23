@@ -10,6 +10,7 @@ import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
 import { generateGeminiContent } from "@/lib/gemini";
 import { UNAUTHORIZED_RESPONSE } from "@/lib/auth-errors";
 
+/** Generate a career break plan based on user preferences. */
 export async function planCareerBreak(duration, reason, returnGoals) {
   const userId = await getAuthenticatedUserId(auth);
   if (!userId) return UNAUTHORIZED_RESPONSE;
@@ -61,6 +62,7 @@ export async function planCareerBreak(duration, reason, returnGoals) {
     return { success: false, errors: { _form: [error.message || "Failed to generate plan"] } };
   }
 }
+/** Retrieve all career break plans for the current user. */
 
 export async function getCareerBreakPlans() {
   const userId = await getAuthenticatedUserId(auth);
