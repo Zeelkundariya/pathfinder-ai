@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
+import { getAuthenticatedUser } from "@/lib/auth-user";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
@@ -11,7 +12,7 @@ export async function generateMentorPlan(goals, targetIndustry) {
   const { userId } = await auth();
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
-  const user = await db.user.findUnique({ where: { clerkUserId: userId } });
+  const user = await getAuthenticatedUser(userId);
   if (!user) return { success: false, errors: { _form: ["User not found"] } };
 
   if (!goals || !targetIndustry) {
@@ -67,7 +68,7 @@ export async function getMentorOutreaches() {
   const { userId } = await auth();
   if (!userId) return { success: false, data: [] };
 
-  const user = await db.user.findUnique({ where: { clerkUserId: userId } });
+  const user = await getAuthenticatedUser(userId);
   if (!user) return { success: false, data: [] };
 
   const records = await db.mentorOutreach.findMany({

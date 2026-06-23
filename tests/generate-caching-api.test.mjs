@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   getCachedResponse: vi.fn(),
   cacheResponse: vi.fn(),
   getPendingGenerationRequest: vi.fn(),
+  setPendingGenerationRequest: vi.fn(),
+  deletePendingGenerationRequest: vi.fn(),
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -44,7 +46,12 @@ vi.mock("@/lib/rate-limit", () => ({
 vi.mock("@/lib/cache/cache-service", () => ({
   getCachedResponse: mocks.getCachedResponse,
   cacheResponse: mocks.cacheResponse,
+  getPendingGenerationRequest: vi.fn().mockResolvedValue(null),
+  setPendingGenerationRequest: vi.fn().mockResolvedValue(undefined),
+  deletePendingGenerationRequest: vi.fn().mockResolvedValue(undefined),
   getPendingGenerationRequest: mocks.getPendingGenerationRequest,
+  setPendingGenerationRequest: mocks.setPendingGenerationRequest,
+  deletePendingGenerationRequest: mocks.deletePendingGenerationRequest,
   setPendingGenerationRequest: vi.fn(),
   deletePendingGenerationRequest: vi.fn(),
 }));
@@ -66,6 +73,8 @@ describe("Generate API Route Caching", () => {
       remaining: 10,
       retryAfterSeconds: 0,
     });
+
+    mocks.getPendingGenerationRequest.mockResolvedValue(null);
 
     // Default authenticated user
     mocks.auth.mockResolvedValue({ userId: "clerk-user-123" });

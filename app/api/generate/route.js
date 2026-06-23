@@ -221,19 +221,6 @@ export async function POST(request) {
   }
   let cacheUser = userId || extractTrustedClientIp(request.headers) || "anonymous";
 
-  const existingCachedResponse = await getCachedResponse(
-    cacheUser,
-    promptCheck.prompt
-  );
-
-  if (existingCachedResponse) {
-    return createCachedSseResponse({
-      text: existingCachedResponse,
-      headers: SSE_BASE_HEADERS,
-      cacheStatus: "HIT",
-    });
-  }
-
   // Check for pending request (deduplication)
   const pendingRequest = await getPendingGenerationRequest(
     cacheUser,
