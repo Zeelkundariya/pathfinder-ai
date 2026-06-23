@@ -5,6 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { getHistoryRecords } from "@/lib/history-query";
 import { buildUserLookup } from "@/lib/user-query";
+import { buildHistoryResponse } from "@/lib/history-loader";
 import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
 import { generateGeminiContent } from "@/lib/gemini";
 import { USER_NOT_FOUND_RESPONSE } from "@/lib/user-not-found";
@@ -74,5 +75,5 @@ export async function getBurnoutAssessments() {
   user.id
 );
 
-  return { success: true, data: records };
+  return buildHistoryResponse(records);
 }
