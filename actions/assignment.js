@@ -14,11 +14,9 @@ import { getHistoryRecords } from "@/lib/history-query";
 import { USER_NOT_FOUND_RESPONSE } from "@/lib/user-not-found";
 
 export async function gradeAssignment(promptText, solutionText) {
-  const { userId } = await auth();
-  if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
+  const user = await getAuthenticatedHistoryUser();
 
-  const user = await db.user.findUnique(buildUserLookup(userId));
-  if (!user) return USER_NOT_FOUND_RESPONSE;
+  if (!user) return EMPTY_HISTORY_RESPONSE;
 
   if (!promptText || !solutionText) {
     return { success: false, errors: { _form: ["Both prompt and solution are required."] } };
