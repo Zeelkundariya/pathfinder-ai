@@ -1,4 +1,5 @@
 "use server";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth-user";
@@ -13,7 +14,7 @@ export async function generateMentorPlan(goals, targetIndustry) {
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
   const user = await getAuthenticatedUser(userId);
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   if (!goals || !targetIndustry) {
     return { success: false, errors: { _form: ["Goals and target industry are required."] } };

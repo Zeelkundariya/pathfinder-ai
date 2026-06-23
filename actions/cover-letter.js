@@ -1,4 +1,5 @@
 "use server";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -197,7 +198,7 @@ export async function deleteCoverLetter(id) {
     const user = await db.user.findUnique({
       where: { clerkUserId: userId },
     });
-    if (!user) return { success: false, errors: { _form: ["User not found"] } };
+    if (!user) return createErrorResponse("User not found");
 
     const { count } = await db.coverLetter.deleteMany({
       where: {

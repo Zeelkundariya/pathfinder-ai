@@ -1,4 +1,5 @@
 "use server";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { getUserByClerkId } from "@/lib/user";
@@ -15,7 +16,7 @@ export async function generateSelfAssessment(achievements, challenges, goals) {
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
   const user = await getPerformanceReviewUser(userId);
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   if (!achievements || !goals) {
     return { success: false, errors: { _form: ["Achievements and goals are required."] } };
