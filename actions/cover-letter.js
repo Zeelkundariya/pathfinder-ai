@@ -1,8 +1,9 @@
 "use server";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { USER_NOT_FOUND_MESSAGE } from "@/lib/user-errors";
+import { USER_NOT_FOUND_MESSAGE } from "@/lib/errors";
 import { generateGeminiContent } from "@/lib/gemini";
 import { buildSecurePrompt, generateWithStructuredOutput } from "@/lib/prompt-safety";
 import { buildUserProfileContext } from "@/lib/ai-context";
@@ -197,7 +198,7 @@ export async function deleteCoverLetter(id) {
     const user = await db.user.findUnique({
       where: { clerkUserId: userId },
     });
-    if (!user) return { success: false, errors: { _form: ["User not found"] } };
+    if (!user) return createErrorResponse("User not found");
 
     const { count } = await db.coverLetter.deleteMany({
       where: {

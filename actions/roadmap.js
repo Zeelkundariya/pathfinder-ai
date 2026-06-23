@@ -6,7 +6,7 @@ import { generateGeminiContent } from "@/lib/gemini";
 import { buildSecurePrompt, generateWithStructuredOutput } from "@/lib/prompt-safety";
 import { buildUserProfileContext } from "@/lib/ai-context";
 import { validateOutput } from "@/lib/validate";
-import { USER_NOT_FOUND_MESSAGE } from "@/lib/user-errors";
+import { USER_NOT_FOUND_MESSAGE } from "@/lib/errors";
 import { careerRoadmapOutputSchema, SCHEMA_DESCRIPTIONS } from "@/lib/schemas/outputs";
 import { checkRateLimit, formatResetTime } from "@/lib/rate-limit-actions";
 
