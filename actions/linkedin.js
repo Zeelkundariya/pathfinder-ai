@@ -33,11 +33,45 @@ export async function optimizeLinkedInProfile(data) {
   });
   if (!user) return createErrorResponse("User not found");
 
+  let profileContent = validation.data.profileContent;
+
+  if (validation.data.profileUrl) {
+    if (!process.env.PROXYCURL_API_KEY) {
+      return { success: false, errors: { _form: ["Proxycurl API key is not configured. Please add PROXYCURL_API_KEY to your environment variables."] } };
+    }
+
+    try {
+      const response = await fetch(`https://nubela.co/proxycurl/api/v2/linkedin?url=${encodeURIComponent(validation.data.profileUrl)}`, {
+        headers: {
+          'Authorization': `Bearer ${process.env.PROXYCURL_API_KEY}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Proxycurl error: ${response.statusText}`);
+      }
+      const profileData = await response.json();
+      
+      profileContent = `
+Headline: ${profileData.headline || ''}
+Summary: ${profileData.summary || ''}
+Experiences:
+${(profileData.experiences || []).map(exp => `- ${exp.title} at ${exp.company}\n  ${exp.description || ''}`).join('\n')}
+      `.trim();
+    } catch (err) {
+      console.error("Proxycurl API Error:", err);
+      return { success: false, errors: { _form: ["Failed to fetch LinkedIn profile from URL."] } };
+    }
+  }
+
+  if (!profileContent || profileContent.trim().length < 50) {
+    return { success: false, errors: { _form: ["Profile content is too short or could not be extracted. Must be at least 50 characters."] } };
+  }
+
   const prompt = buildSecurePrompt({
     context: buildUserProfileContext(user),
     task: "You are an expert LinkedIn profile optimizer and technical recruiter. Analyze the provided LinkedIn profile content and suggest improvements to maximize search visibility and recruiter engagement.",
     untrustedData: [
-      { label: "profileContent", value: validation.data.profileContent, maxLength: 50000 },
+      { label: "profileContent", value: profileContent, maxLength: 50000 },
     ],
     outputRules: `Provide your analysis in the following JSON format ONLY:
 {
@@ -61,7 +95,7 @@ export async function optimizeLinkedInProfile(data) {
     const record = await db.linkedInOptimization.create({
       data: {
         userId: user.id,
-        profileContent: validation.data.profileContent,
+        profileContent: profileContent,
         analysis: parsedData,
       },
     });
