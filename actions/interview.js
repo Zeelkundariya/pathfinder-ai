@@ -591,6 +591,7 @@ Return ONLY a valid JSON object matching this schema. Do not output any markdown
     const cacheKey = generateCacheKey("quiz-session", userId, sessionId);
     await cacheStore.set(cacheKey, questions, QUIZ_CACHE_TTL_MS);
 
+    return { sessionId, questions };
     return { sessionId, questions, isFallback };
   } catch (error) {
     console.error("Quiz generation top-level error:", error);
@@ -651,6 +652,34 @@ export async function saveQuizResult(sessionIdOrQuestions, answers, category = "
       throw new Error(`Quiz feedback limit reached. Resets in ${formatResetTime(feedbackLimit.resetAt)}.`);
     }
 
+    let questions;
+    let cacheKey = null;
+
+    if (Array.isArray(sessionIdOrQuestions)) {
+      questions = sessionIdOrQuestions;
+    } else {
+      const sessionId = sessionIdOrQuestions;
+      if (!sessionId) {
+        throw new Error("Session ID is required.");
+      }
+      cacheKey = generateCacheKey("quiz-session", userId, sessionId);
+      questions = await cacheStore.get(cacheKey);
+      if (!questions) {
+        throw new Error("Quiz session expired or not found. Please start a new quiz.");
+      }
+    }
+
+    const profileContext = buildUserProfileContext(user);
+
+    const sanitizedAnswers = Array.isArray(answers)
+      ? answers.slice(0, questions.length)
+      : [];
+
+    while (sanitizedAnswers.length < questions.length) {
+      sanitizedAnswers.push(null);
+    }
+
+    // Map user answers to question outcomes and compute score on the server
     const sanitizedAnswers = Array.isArray(answers)
       ? answers.slice(0, questions.length)
       : [];
@@ -726,14 +755,21 @@ export async function saveQuizResult(sessionIdOrQuestions, answers, category = "
       const isCorrect = q.correctAnswer === userAnswer;
       if (isCorrect) {
         correctCount++;
+      } else {
+        wrongAnswers.push(q);
       }
 
-      const mappedQuestion = {
+      questionResults.push({
         question: q.question.trim(),
         options: q.options,
         correctAnswer: q.correctAnswer,
         userAnswer: userAnswer,
         isCorrect,
+        explanation: q.explanation || "",
+      });
+    });
+
+    const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
         explanation: q.explanation,
       };
 
@@ -762,6 +798,7 @@ export async function saveQuizResult(sessionIdOrQuestions, answers, category = "
         untrustedData: [
           { label: "industry", value: user.industry || "software", maxLength: 200 },
           { label: "category", value: category, maxLength: 200 },
+          { label: "score", value: String(score), maxLength: 50 },
           { label: "score", value: String(computedScore), maxLength: 50 },
           { label: "wrongAnswers", value: wrongText, maxLength: 4000 },
         ],
@@ -780,8 +817,9 @@ export async function saveQuizResult(sessionIdOrQuestions, answers, category = "
     const assessment = await db.assessment.create({
       data: {
         userId: user.id,
-        quizScore: computedScore,
+        quizScore: score,
         questions: questionResults,
+        category,
         category: category,
         improvementTip,
       },
