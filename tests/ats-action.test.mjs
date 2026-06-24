@@ -49,6 +49,11 @@ vi.mock("@/lib/cache", async () => {
   };
 });
 
+vi.mock("@/lib/rate-limit-actions", () => ({
+  checkRateLimit: mocks.checkRateLimit,
+  formatResetTime: mocks.formatResetTime,
+}));
+
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
@@ -73,6 +78,8 @@ describe("analyzeATS", () => {
     };
 
     mocks.auth.mockResolvedValue({ userId: "user-1" });
+    mocks.checkRateLimit.mockResolvedValue({ allowed: true });
+    mocks.findUnique.mockResolvedValue({ id: "db-user-1", clerkUserId: "user-1" });
     mocks.findUniqueUser.mockResolvedValue({ id: "db-user-1", clerkUserId: "user-1" });
     mocks.aiRateLimitUpsert.mockResolvedValue({ count: 1 });
     mocks.generateCacheKey.mockReturnValue("ats:test-key");
