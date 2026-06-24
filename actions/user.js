@@ -58,8 +58,20 @@ export async function updateUser(data) {
               nextUpdate: getIndustryInsightRefreshTime(),
             },
           })
-        : await tx.industryInsight.findUnique({
+        : await tx.industryInsight.upsert({
             where: { industry: profileData.industry },
+            update: {},
+            create: {
+              industry: profileData.industry,
+              salaryRanges: [],
+              growthRate: 0,
+              demandLevel: "Medium",
+              topSkills: [],
+              marketOutlook: "AI insights generation failed. This profile will be updated automatically in the future.",
+              keyTrends: [],
+              recommendedSkills: [],
+              nextUpdate: getIndustryInsightRefreshTime(),
+            },
           });
 
       const updatedUser = await tx.user.update({

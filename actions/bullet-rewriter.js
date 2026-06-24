@@ -10,6 +10,7 @@ import { checkRateLimit, formatResetTime } from "@/lib/rate-limit-actions";
 import { assertFeatureEnabled } from "@/lib/ai-gating";
 import { generateGeminiContent } from "@/lib/gemini";
 
+/** Rewrite a resume bullet point for stronger impact. */
 export async function rewriteBullet(rawParams) {
   try {
     assertFeatureEnabled("bulletRewriter");

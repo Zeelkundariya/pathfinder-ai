@@ -53,6 +53,8 @@ vi.mock("@/lib/cache/cache-service", () => ({
   setPendingGenerationRequest: vi.fn().mockResolvedValue(undefined),
   deletePendingGenerationRequest: vi.fn().mockResolvedValue(undefined),
   getPendingGenerationRequest: mocks.getPendingGenerationRequest,
+  setPendingGenerationRequest: mocks.setPendingGenerationRequest,
+  deletePendingGenerationRequest: mocks.deletePendingGenerationRequest,
   setPendingGenerationRequest: vi.fn(),
   deletePendingGenerationRequest: vi.fn(),
 }));
@@ -74,6 +76,8 @@ describe("Generate API Route Caching", () => {
       remaining: 10,
       retryAfterSeconds: 0,
     });
+
+    mocks.getPendingGenerationRequest.mockResolvedValue(null);
 
     // Default authenticated user
     mocks.auth.mockResolvedValue({ userId: "clerk-user-123" });

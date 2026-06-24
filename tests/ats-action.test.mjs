@@ -26,6 +26,8 @@ vi.mock("@/lib/prisma", () => ({
       create: mocks.atsAnalysisCreate,
     },
     aiRateLimit: {
+      findUnique: () => Promise.resolve(null),
+      upsert: () => Promise.resolve({ count: 1 }),
       findUnique: mocks.aiRateLimitFindUnique,
       upsert: mocks.aiRateLimitUpsert,
       update: mocks.aiRateLimitUpdate,
