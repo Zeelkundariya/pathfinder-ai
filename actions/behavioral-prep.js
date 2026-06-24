@@ -9,6 +9,7 @@ import { generateGeminiContent } from "@/lib/gemini";
 import { USER_NOT_FOUND_MESSAGE } from "@/lib/errors";
 import { createAiPrompt } from "@/lib/prompt-builder";
 
+/** Generate a behavioral interview assessment strategy. */
 export async function generateAssessmentStrategy(company, assessmentType) {
   const { userId } = await auth();
   if (!userId) return UNAUTHORIZED_RESPONSE;
@@ -62,6 +63,7 @@ export async function generateAssessmentStrategy(company, assessmentType) {
     return { success: false, errors: { _form: [error.message || "Failed to generate assessment strategy"] } };
   }
 }
+/** Retrieve all behavioral prep sessions for the current user. */
 
 export async function getBehavioralPreps() {
   const { userId } = await auth();
