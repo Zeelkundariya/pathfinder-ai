@@ -17,18 +17,6 @@ const mocks = vi.hoisted(() => {
     formatResetTime: vi.fn(),
   };
 });
-const mocks = vi.hoisted(() => ({
-  auth: vi.fn(),
-  findUniqueUser: vi.fn(),
-  createAssessment: vi.fn(),
-  generateGeminiContent: vi.fn(),
-  cacheGet: vi.fn(),
-  cacheSet: vi.fn(),
-  cacheDelete: vi.fn(),
-  assessmentFindFirst: vi.fn(),
-  checkRateLimit: vi.fn(),
-  formatResetTime: vi.fn(),
-}));
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: mocks.auth,
@@ -64,11 +52,6 @@ vi.mock("@/lib/gemini", () => ({
   generateGeminiContent: mocks.generateGeminiContent,
 }));
 
-vi.mock("@/lib/rate-limit-actions", () => ({
-  checkRateLimit: mocks.checkRateLimit,
-  formatResetTime: mocks.formatResetTime,
-}));
-
 vi.mock("@/lib/cache", async () => {
   const actual = await vi.importActual("@/lib/cache");
   return {
@@ -81,24 +64,10 @@ vi.mock("@/lib/cache", async () => {
   };
 });
 
-vi.mock("@/lib/rate-limit-actions", () => ({
-  checkRateLimit: mocks.checkRateLimit,
-  formatResetTime: vi.fn(),
-}));
-
-import { generateQuiz, saveQuizResult, getAssessment } from "../actions/interview.js";
-
-describe("getAssessment", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mocks.checkRateLimit.mockResolvedValue({ allowed: true });
-import { generateQuiz, saveQuizResult, getAssessment } from "../actions/interview.js";
-
 describe("interview actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.checkRateLimit.mockResolvedValue({ allowed: true });
-    mocks.formatResetTime.mockReturnValue("1 hour");
     mocks.formatResetTime.mockReturnValue("10m");
   });
 
@@ -225,13 +194,6 @@ describe("interview actions", () => {
     });
   });
 
-  it("returns null if user is not authenticated", async () => {
-    mocks.auth.mockResolvedValue({ userId: null });
-    const result = await getAssessment("assessment-1");
-    expect(result).toBeNull();
-    expect(mocks.userFindUnique).not.toHaveBeenCalled();
-  });
-
   describe("getAssessment", () => {
     it("returns null if user is not authenticated", async () => {
       mocks.auth.mockResolvedValue({ userId: null });
@@ -243,16 +205,6 @@ describe("interview actions", () => {
     it("returns null if user is not found in database", async () => {
       mocks.auth.mockResolvedValue({ userId: "clerk-1" });
       mocks.userFindUnique.mockResolvedValue(null);
-      const result = await getAssessment("assessment-1");
-      expect(result).toBeNull();
-    });
-
-      expect(mocks.findUniqueUser).not.toHaveBeenCalled();
-    });
-
-    it("returns null if user is not found in database", async () => {
-      mocks.auth.mockResolvedValue({ userId: "clerk-1" });
-      mocks.findUniqueUser.mockResolvedValue(null);
       const result = await getAssessment("assessment-1");
       expect(result).toBeNull();
     });
