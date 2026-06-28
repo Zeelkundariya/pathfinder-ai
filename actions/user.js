@@ -1,4 +1,5 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
 
 import { db } from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
@@ -42,8 +43,7 @@ export async function updateUser(data) {
       precomputedInsights = await generateAIInsights(profileData.industry);
     }
   } catch (e) {
-    console.error("Failed to generate insights pre-transaction:", e);
-    precomputedInsights = null;
+    return handleServerError(e, "user");
   }
 
   try {
@@ -58,8 +58,20 @@ export async function updateUser(data) {
               nextUpdate: getIndustryInsightRefreshTime(),
             },
           })
-        : await tx.industryInsight.findUnique({
+        : await tx.industryInsight.upsert({
             where: { industry: profileData.industry },
+            update: {},
+            create: {
+              industry: profileData.industry,
+              salaryRanges: [],
+              growthRate: 0,
+              demandLevel: "Medium",
+              topSkills: [],
+              marketOutlook: "AI insights generation failed. This profile will be updated automatically in the future.",
+              keyTrends: [],
+              recommendedSkills: [],
+              nextUpdate: getIndustryInsightRefreshTime(),
+            },
           });
 
       const updatedUser = await tx.user.update({
@@ -82,8 +94,7 @@ export async function updateUser(data) {
 
     return result;
   } catch (err) {
-    console.error("Error updating user and industry:", err);
-    throw new Error("Failed to update profile");
+    return handleServerError(err, "user");
   }
 }
 
@@ -134,7 +145,6 @@ export async function getUserOnboardingStatus() {
       isSignedIn: true,
     };
   } catch (error) {
-    console.error("Error getting user onboarding status:", error);
-    return { isOnboarded: false, user: null, isSignedIn: false, error: error.message };
+    return handleServerError(error, "user");
   }
 }

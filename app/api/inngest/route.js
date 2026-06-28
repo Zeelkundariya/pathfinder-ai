@@ -1,4 +1,4 @@
-﻿function isInngestConfigured() {
+function isInngestConfigured() {
   return !!(process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY);
 }
 
@@ -10,7 +10,7 @@ async function getHandler(request) {
     { serve },
   ] = await Promise.all([
     import("@/lib/inngest/client"),
-    import("@/lib/inngest/function"),
+    import("@/lib/jobs"),
     import("@/.inngest/functions/cleanup-rate-limits"),
     import("inngest/next"),
   ]);

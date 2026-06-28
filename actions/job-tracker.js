@@ -1,8 +1,12 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { fetchRecentJobEmails } from "@/lib/google/gmail";
+import { extractJobApplicationFromEmail } from "@/lib/gemini";
 import { validateInput } from "@/lib/validate";
 import { jobApplicationSchema, jobApplicationUpdateStatusSchema } from "@/lib/schemas/forms";
 
@@ -47,7 +51,7 @@ export async function createJobApplication(data) {
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
   });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   try {
     const job = await db.jobApplication.create({
@@ -61,8 +65,7 @@ export async function createJobApplication(data) {
     revalidatePath("/dashboard");
     return { success: true, data: job };
   } catch (error) {
-    console.error("Failed to create job application:", error);
-    return { success: false, errors: { _form: ["Failed to create job application"] } };
+    return handleServerError(error, "job-tracker");
   }
 }
 
@@ -76,7 +79,7 @@ export async function updateJobApplicationStatus(id, status) {
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
   });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   try {
     const job = await db.jobApplication.updateMany({
@@ -97,8 +100,7 @@ export async function updateJobApplicationStatus(id, status) {
     revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
-    console.error("Failed to update job status:", error);
-    return { success: false, errors: { _form: ["Failed to update job status"] } };
+    return handleServerError(error, "job-tracker");
   }
 }
 
@@ -109,7 +111,7 @@ export async function updateJobApplicationInterviewDate(id, interviewDate) {
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
   });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   try {
     const parsedDate = interviewDate ? new Date(interviewDate) : null;
@@ -134,8 +136,7 @@ export async function updateJobApplicationInterviewDate(id, interviewDate) {
     revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
-    console.error("Failed to update interview date:", error);
-    return { success: false, errors: { _form: ["Failed to update interview date"] } };
+    return handleServerError(error, "job-tracker");
   }
 }
 
@@ -146,7 +147,7 @@ export async function deleteJobApplication(id) {
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
   });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   try {
     const job = await db.jobApplication.deleteMany({
@@ -164,8 +165,7 @@ export async function deleteJobApplication(id) {
     revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
-    console.error("Failed to delete job application:", error);
-    return { success: false, errors: { _form: ["Failed to delete job application"] } };
+    return handleServerError(error, "job-tracker");
   }
 }
 
@@ -252,7 +252,89 @@ export async function getJobAnalytics() {
       }
     };
   } catch (error) {
-    console.error("Failed to fetch analytics:", error);
-    return { success: false, data: null };
+    return handleServerError(error, "job-tracker");
+  }
+}
+
+export async function syncJobApplicationsFromEmail() {
+  const { userId } = await auth();
+  if (!userId) return { success: false, message: "Unauthorized" };
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+  });
+  if (!user) return createErrorResponse("User not found");
+
+  try {
+    const client = await clerkClient();
+    const response = await client.users.getUserOauthAccessToken(userId, "oauth_google");
+    const tokens = response.data;
+    if (!tokens || tokens.length === 0) {
+      return { success: false, message: "No Google Account connected or missing Gmail scopes." };
+    }
+    
+    const accessToken = tokens[0].token;
+    const emails = await fetchRecentJobEmails(accessToken, 7);
+    
+    if (emails.length === 0) {
+      return { success: true, message: "No recent job-related emails found." };
+    }
+
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    for (const email of emails) {
+      const parsedData = await extractJobApplicationFromEmail(email.body);
+      if (!parsedData || !parsedData.companyName) continue;
+
+      const { companyName, jobTitle, status, interviewDate } = parsedData;
+
+      // Find existing by company (basic deduplication)
+      const existing = await db.jobApplication.findFirst({
+        where: {
+          userId: user.id,
+          companyName: { contains: companyName, mode: "insensitive" }
+        },
+        orderBy: { updatedAt: 'desc' }
+      });
+
+      const parsedDate = interviewDate ? new Date(interviewDate) : null;
+      const validDate = parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate : null;
+
+      if (existing) {
+        // Update if status changed or new interview date
+        const isNewStatus = existing.status !== status && status !== "Applied"; // Don't downgrade
+        const isNewDate = validDate && (!existing.interviewDate || existing.interviewDate.getTime() !== validDate.getTime());
+        
+        if (isNewStatus || isNewDate) {
+          await db.jobApplication.update({
+            where: { id: existing.id },
+            data: {
+              ...(isNewStatus ? { status } : {}),
+              ...(isNewDate ? { interviewDate: validDate } : {})
+            }
+          });
+          updatedCount++;
+        }
+      } else {
+        await db.jobApplication.create({
+          data: {
+            userId: user.id,
+            companyName,
+            jobTitle: jobTitle || "Unknown Role",
+            status: status || "Applied",
+            interviewDate: validDate,
+            notes: `Auto-synced from email: ${email.subject}`
+          }
+        });
+        addedCount++;
+      }
+    }
+
+    revalidatePath("/job-tracker");
+    revalidatePath("/dashboard");
+    return { success: true, message: \`Synced! Added \${addedCount}, Updated \${updatedCount} applications.\` };
+  } catch (error) {
+    return handleServerError(error, "job-tracker");
   }
 }

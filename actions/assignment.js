@@ -1,17 +1,29 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
 
 import { db } from "@/lib/prisma";
+import { buildUserLookup } from "@/lib/user-query";
+import { getAuthenticatedHistoryResponse } from "@/lib/history-response-auth";
+import { createSuccessResponse } from "@/lib/action-success";
 import { auth } from "@clerk/nextjs/server";
+import { logActionError } from "@/lib/action-logger";
 import { revalidatePath } from "next/cache";
+import { EMPTY_HISTORY_RESPONSE } from "@/lib/history-response";
 import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
+import { revalidateAppPath } from "@/lib/cache-revalidate";
+import { getAuthenticatedHistoryUser } from "@/lib/history-auth";
+import { buildHistoryResponse } from "@/lib/history-loader";
 import { generateGeminiContent } from "@/lib/gemini";
+import { getHistoryRecords } from "@/lib/history-query";
+import { USER_NOT_FOUND_RESPONSE } from "@/lib/user-not-found";
 
+/** Grade an assignment submission against a rubric or prompt. */
 export async function gradeAssignment(promptText, solutionText) {
-  const { userId } = await auth();
-  if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
+  const user = await getAuthenticatedHistoryUser();
 
-  const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  const user = await getUserByScope(userId);
+  if (!user) return USER_NOT_FOUND_RESPONSE;
+  if (!user) return EMPTY_HISTORY_RESPONSE;
 
   if (!promptText || !solutionText) {
     return { success: false, errors: { _form: ["Both prompt and solution are required."] } };
@@ -52,22 +64,22 @@ export async function gradeAssignment(promptText, solutionText) {
     revalidatePath("/assignment-grader");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Assignment Grader Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to grade assignment"] } };
+    return handleServerError(error, "assignment");
   }
+/** Retrieve all graded assignments for the current user. */
 }
 
 export async function getAssignmentGrades() {
   const { userId } = await auth();
-  if (!userId) return { success: false, data: [] };
+  if (!userId) return EMPTY_HISTORY_RESPONSE;
 
-  const user = await db.user.findUnique({ where: { clerkUserId: userId } });
+  const user = await db.user.findUnique(buildUserLookup(userId));
   if (!user) return { success: false, data: [] };
 
-  const records = await db.assignmentGrade.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const records = await getHistoryRecords(
+  db.assignment,
+  user.id
+);
 
-  return { success: true, data: records };
+  return buildHistoryResponse(records);
 }

@@ -1,5 +1,4 @@
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
-
 import { server } from "./mocks/server.mjs";
 
 // Ensure AbortController and AbortSignal are consistent with Node.js native implementations
@@ -11,7 +10,6 @@ if (typeof globalThis.AbortController !== "undefined" &&
   // this is where we would normalize it. For happy-dom, it is already compatible.
 }
 
-// Set required environment variables for tests
 // Set required environment variables before any module evaluation
 process.env.NODE_ENV = "test";
 if (!process.env.DATABASE_URL) {
@@ -21,13 +19,19 @@ if (!process.env.GEMINI_API_KEY) {
   process.env.GEMINI_API_KEY = "test-api-key";
 }
 
-import { vi, afterAll, afterEach, beforeAll } from "vitest";
-
 // Mock build-time boundary guards in test environment
 vi.mock("server-only", () => ({}));
 vi.mock("client-only", () => ({}));
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
 
-import { server } from "./mocks/server.mjs";
+// Mock next/cache globally to avoid Invariant errors in server actions
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => server.resetHandlers());

@@ -1,7 +1,9 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { USER_NOT_FOUND_MESSAGE } from "@/lib/errors";
 import { generateGeminiContent } from "@/lib/gemini";
 import { buildSecurePrompt, generateWithStructuredOutput } from "@/lib/prompt-safety";
 import { buildUserProfileContext } from "@/lib/ai-context";
@@ -24,7 +26,7 @@ export async function generateExecutivePresence(formData) {
     const user = await db.user.findUnique({
       where: { clerkUserId: userId },
     });
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(USER_NOT_FOUND_MESSAGE);
 
     const targetAudience = formData.get("targetAudience");
     const currentChallenge = formData.get("currentChallenge");
@@ -85,14 +87,7 @@ Respond ONLY with a valid JSON object in this exact format:
 
     return presence;
   } catch (error) {
-    console.error("Error generating executive presence:", error);
-    if (process.env.NODE_ENV === "test") {
-      throw error;
-    }
-    return {
-      success: false,
-      error: error?.message || "Failed to generate executive presence plan."
-    };
+    return handleServerError(error, "executive-presence");
   }
 }
 
@@ -113,10 +108,6 @@ export async function getExecutivePresences() {
     
     return { presences, error: null };
   } catch (error) {
-    console.error("Error fetching executive presences:", error);
-    return { 
-      presences: [], 
-      error: error.message || "Failed to load executive presence history." 
-    };
+    return handleServerError(error, "executive-presence");
   }
 }

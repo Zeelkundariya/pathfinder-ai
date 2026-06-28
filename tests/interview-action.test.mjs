@@ -7,6 +7,8 @@ const actionMocks = vi.hoisted(() => ({
   generateGeminiContent: vi.fn(),
   checkRateLimit: vi.fn(),
   formatResetTime: vi.fn(),
+  cacheGet: vi.fn(),
+  cacheDelete: vi.fn(),
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -33,6 +35,17 @@ vi.mock("@/lib/rate-limit-actions", () => ({
   formatResetTime: actionMocks.formatResetTime,
 }));
 
+vi.mock("@/lib/cache", async () => {
+  const actual = await vi.importActual("@/lib/cache");
+  return {
+    ...actual,
+    cacheStore: {
+      get: actionMocks.cacheGet,
+      delete: actionMocks.cacheDelete,
+    },
+  };
+});
+
 describe("saveQuizResult", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -40,6 +53,7 @@ describe("saveQuizResult", () => {
 
   it("saves quiz result with dynamic industry-aware fallback tip when AI fails", async () => {
     const { saveQuizResult } = await import("../actions/interview.js");
+    const { getCacheStore, generateCacheKey } = await import("../lib/cache/index.js");
 
     actionMocks.auth.mockResolvedValue({ userId: "user-123" });
     actionMocks.checkRateLimit.mockResolvedValue({ allowed: true });
@@ -57,6 +71,7 @@ describe("saveQuizResult", () => {
       ...data,
     }));
 
+    const sessionId = "12345678-1234-1234-1234-1234567890ab";
     const questions = [
       {
         question: "What is a stethoscope used for?",
@@ -65,9 +80,17 @@ describe("saveQuizResult", () => {
         explanation: "Stethoscopes detect internal body sounds.",
       },
     ];
+
+    const cacheKey = generateCacheKey("quiz-session", "user-123", sessionId);
+    const cacheStore = getCacheStore();
+    await cacheStore.set(cacheKey, questions);
+
     const answers = ["Measuring temperature"]; // Wrong answer
 
-    const result = await saveQuizResult(questions, answers, "Technical");
+    actionMocks.cacheGet.mockResolvedValue(questions);
+
+    const result = await saveQuizResult("test-session-123", answers, "Technical");
+    const result = await saveQuizResult(sessionId, answers, "Technical");
 
     expect(actionMocks.auth).toHaveBeenCalled();
     expect(actionMocks.checkRateLimit).toHaveBeenCalledWith("user-123", "quizFeedback");

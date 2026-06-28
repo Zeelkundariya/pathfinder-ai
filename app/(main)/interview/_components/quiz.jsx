@@ -61,12 +61,14 @@ export default function Quiz() {
     setData: setResultData,
   } = useFetch(saveQuizResult);
 
+  const questions = quizData?.questions || [];
+  const sessionId = quizData?.sessionId || null;
+
   useEffect(() => {
-    if (quizData) {
-      const qs = quizData.questions || quizData;
-      setAnswers(new Array(qs.length).fill(null));
+    if (questions && questions.length > 0) {
+      setAnswers(new Array(questions.length).fill(null));
     }
-  }, [quizData]);
+  }, [quizData, questions]);
 
   const handleAnswer = (answer) => {
     const newAnswers = [...answers];
@@ -75,8 +77,7 @@ export default function Quiz() {
   };
 
   const handleNext = () => {
-    const qs = quizData?.questions || quizData;
-    if (currentQuestion < qs.length - 1) {
+    if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
       setShowExplanation(false);
     } else {
@@ -86,8 +87,11 @@ export default function Quiz() {
 
   const finishQuiz = async () => {
     try {
-      const qs = quizData?.questions || quizData;
-      await saveQuizResultFn(qs, answers, selectedCategory);
+      await saveQuizResultFn(quizData.sessionId, answers, selectedCategory);
+      await saveQuizResultFn(quizData.sessionId || quizData, answers, selectedCategory);
+      const target = sessionId || questions;
+      await saveQuizResultFn(target, answers, selectedCategory);
+      await saveQuizResultFn(sessionId, answers, selectedCategory);
       toast.success("Quiz completed!");
     } catch (error) {
       toast.error(error.message || "Failed to save quiz results");
@@ -103,10 +107,14 @@ export default function Quiz() {
   };
 
   if (generatingQuiz) {
-    return <BarLoader className="mt-4" width={"100%"} color="gray" />;
+    return (
+      <Card className="mx-2 flex flex-col items-center justify-center py-10">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+        <CardDescription>Generating your personalized quiz questions...</CardDescription>
+      </Card>
+    );
   }
 
-  // Show results if quiz is completed
   if (resultData) {
     return (
       <div className="mx-2">
@@ -192,7 +200,6 @@ export default function Quiz() {
     );
   }
 
-  const questions = quizData.questions || quizData;
   const question = questions[currentQuestion];
   const isFallback = quizData.isFallback;
 
@@ -251,7 +258,7 @@ export default function Quiz() {
           {savingResult && (
             <BarLoader className="mt-4" width={"100%"} color="gray" />
           )}
-          {currentQuestion < quizData.length - 1
+          {currentQuestion < questions.length - 1
             ? "Next Question"
             : "Finish Quiz"}
         </Button>

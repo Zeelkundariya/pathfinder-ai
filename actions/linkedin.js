@@ -1,4 +1,6 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -30,13 +32,46 @@ export async function optimizeLinkedInProfile(data) {
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
   });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
+
+  let profileContent = validation.data.profileContent;
+
+  if (validation.data.profileUrl) {
+    if (!process.env.PROXYCURL_API_KEY) {
+      return { success: false, errors: { _form: ["Proxycurl API key is not configured. Please add PROXYCURL_API_KEY to your environment variables."] } };
+    }
+
+    try {
+      const response = await fetch(`https://nubela.co/proxycurl/api/v2/linkedin?url=${encodeURIComponent(validation.data.profileUrl)}`, {
+        headers: {
+          'Authorization': `Bearer ${process.env.PROXYCURL_API_KEY}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Proxycurl error: ${response.statusText}`);
+      }
+      const profileData = await response.json();
+      
+      profileContent = `
+Headline: ${profileData.headline || ''}
+Summary: ${profileData.summary || ''}
+Experiences:
+${(profileData.experiences || []).map(exp => `- ${exp.title} at ${exp.company}\n  ${exp.description || ''}`).join('\n')}
+      `.trim();
+    } catch (err) {
+    return handleServerError(err, "linkedin");
+  }
+  }
+
+  if (!profileContent || profileContent.trim().length < 50) {
+    return { success: false, errors: { _form: ["Profile content is too short or could not be extracted. Must be at least 50 characters."] } };
+  }
 
   const prompt = buildSecurePrompt({
     context: buildUserProfileContext(user),
     task: "You are an expert LinkedIn profile optimizer and technical recruiter. Analyze the provided LinkedIn profile content and suggest improvements to maximize search visibility and recruiter engagement.",
     untrustedData: [
-      { label: "profileContent", value: validation.data.profileContent, maxLength: 50000 },
+      { label: "profileContent", value: profileContent, maxLength: 50000 },
     ],
     outputRules: `Provide your analysis in the following JSON format ONLY:
 {
@@ -60,7 +95,7 @@ export async function optimizeLinkedInProfile(data) {
     const record = await db.linkedInOptimization.create({
       data: {
         userId: user.id,
-        profileContent: validation.data.profileContent,
+        profileContent: profileContent,
         analysis: parsedData,
       },
     });
@@ -68,12 +103,11 @@ export async function optimizeLinkedInProfile(data) {
     revalidatePath("/linkedin-optimizer");
     return { success: true, data: record };
   } catch (error) {
-    console.error("LinkedIn Optimization Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to generate optimization"] } };
+    return handleServerError(error, "linkedin");
   }
 }
 
-export async function getLinkedInOptimizations() {
+export async function getLinkedInOptimizations({ take = 10, skip = 0 } = {}) {
   const { userId } = await auth();
   if (!userId) return { success: false, data: [] };
 
@@ -85,6 +119,8 @@ export async function getLinkedInOptimizations() {
   const records = await db.linkedInOptimization.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
+    take,
+    skip,
   });
 
   return { success: true, data: records };

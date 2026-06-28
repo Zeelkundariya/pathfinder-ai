@@ -1,10 +1,12 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { isFeatureEnabled } from "@/lib/ai-gating";
 import { ATS_ANALYSIS_CACHE_TTL_MS, cachedGenerateGeminiContent, generateCacheKey } from "@/lib/cache";
+import { generateGeminiContent } from "@/lib/gemini";
 import { buildSecurePrompt } from "@/lib/prompt-safety";
 import { buildUserProfileContext } from "@/lib/ai-context";
 import { validateInput, validateOutput, parseAIJson } from "@/lib/validate";
@@ -98,6 +100,7 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanation outside the JSON.
 
     const cacheKey = generateCacheKey(
       "ats",
+      userId,
       resumeContent,
       jobDescription,
       jobTitle,
@@ -151,8 +154,7 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanation outside the JSON.
     revalidatePath("/ats-analyzer");
     return { success: true, data: record };
   } catch (error) {
-    console.error("[ATS Action Error]:", error);
-    return { success: false, errors: { _form: [error.message || String(error)] } };
+    return handleServerError(error, "ats");
   }
 }
 
@@ -179,8 +181,7 @@ export async function getATSAnalyses() {
     });
     return { success: true, data: analyses || [] };
   } catch (error) {
-    console.error("Failed to query ATS listings:", error);
-    return { success: false, data: [] };
+    return handleServerError(error, "ats");
   }
 }
 
@@ -224,7 +225,6 @@ export async function deleteATSAnalysis(id) {
     revalidatePath("/ats-analyzer");
     return { success: true };
   } catch (error) {
-    console.error("Failed to safely delete ATS entry:", error);
-    return { success: false, errors: { _form: [error.message || String(error)] } };
+    return handleServerError(error, "ats");
   }
 }

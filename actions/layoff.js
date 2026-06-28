@@ -1,4 +1,6 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -11,7 +13,7 @@ export async function generateLayoffStrategy(details) {
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
   const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   if (!details || details.trim().length === 0) {
     return { success: false, errors: { _form: ["Please provide some details about the layoff/severance."] } };
@@ -54,8 +56,7 @@ export async function generateLayoffStrategy(details) {
     revalidatePath("/layoff-strategist");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Layoff Strategy Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to generate strategy"] } };
+    return handleServerError(error, "layoff");
   }
 }
 

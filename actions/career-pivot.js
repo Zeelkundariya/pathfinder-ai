@@ -1,17 +1,22 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { createErrorResponse } from "@/lib/action-errors";
+import { getAuthenticatedUserId } from "@/lib/auth-userid";
 import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
 import { generateGeminiContent } from "@/lib/gemini";
+import { UNAUTHORIZED_RESPONSE } from "@/lib/auth-errors";
 
+/** Generate a career pivot strategy based on user goals. */
 export async function generatePivotStrategy(currentRole, targetRole) {
-  const { userId } = await auth();
-  if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
+  const userId = await getAuthenticatedUserId(auth);
+  if (!userId) return UNAUTHORIZED_RESPONSE;
 
   const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   if (!currentRole || !targetRole) {
     return { success: false, errors: { _form: ["Both current and target roles are required."] } };
@@ -59,13 +64,12 @@ export async function generatePivotStrategy(currentRole, targetRole) {
     revalidatePath("/career-pivot");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Career Pivot Generation Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to generate pivot strategy"] } };
+    return handleServerError(error, "career-pivot");
   }
 }
 
 export async function getCareerPivots() {
-  const { userId } = await auth();
+  const userId = await getAuthenticatedUserId(auth);
   if (!userId) return { success: false, data: [] };
 
   const user = await db.user.findUnique({ where: { clerkUserId: userId } });

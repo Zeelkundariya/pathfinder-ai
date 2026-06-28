@@ -1,10 +1,11 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { generateGeminiContent } from "@/lib/gemini";
 import { checkRateLimit, formatResetTime } from "@/lib/rate-limit-actions";
-import { buildSecurePrompt } from "@/lib/prompt-safety";
+import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
 
 export async function chatSalaryNegotiation(history, userMessage) {
   const { userId } = await auth();
@@ -36,8 +37,7 @@ export async function chatSalaryNegotiation(history, userMessage) {
     const aiResult = await generateGeminiContent(prompt);
     return { success: true, response: aiResult.response.text() };
   } catch (error) {
-    console.error("Negotiation error:", error);
-    return { success: false, error: "Failed to get a response." };
+    return handleServerError(error, "negotiation");
   }
 }
 
@@ -72,15 +72,9 @@ export async function evaluateNegotiation(history) {
 
   try {
     const aiResult = await generateGeminiContent(prompt);
-    let rawText = aiResult.response.text();
-    // remove markdown block
-    if (rawText.startsWith("\`\`\`json")) {
-      rawText = rawText.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
-    }
-    const parsed = JSON.parse(rawText);
+    const parsed = parseAIJson(aiResult.response.text());
     return { success: true, data: parsed };
   } catch (error) {
-    console.error("Negotiation evaluation error:", error);
-    return { success: false, error: "Failed to evaluate negotiation." };
+    return handleServerError(error, "negotiation");
   }
 }

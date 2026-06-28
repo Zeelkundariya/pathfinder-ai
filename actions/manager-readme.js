@@ -1,4 +1,5 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
 
 import { db } from "@/lib/prisma";
 import { getUserByClerkId } from "@/lib/user";
@@ -6,14 +7,17 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
 import { generateGeminiContent } from "@/lib/gemini";
+import { getHistoryUser } from "@/lib/history-user";
+import { createErrorResponse } from "@/lib/action-errors";
+import { EMPTY_HISTORY_RESPONSE } from "@/lib/history-response";
 import { UNAUTHORIZED_RESPONSE } from "@/lib/auth-errors";
 
 export async function buildReadme(style, boundaries, feedback) {
   const { userId } = await auth();
   if (!userId) return UNAUTHORIZED_RESPONSE;
 
-  const user = await getUserByClerkId(userId);
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  const user = await getHistoryUser(userId);
+  if (!user) return createErrorResponse("User not found");
 
   if (!style || !boundaries || !feedback) {
     return { success: false, errors: { _form: ["All fields are required."] } };
@@ -52,16 +56,15 @@ export async function buildReadme(style, boundaries, feedback) {
     revalidatePath("/manager-readme");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Manager README Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to generate README"] } };
+    return handleServerError(error, "manager-readme");
   }
 }
 
 export async function getManagerReadmes() {
   const { userId } = await auth();
-  if (!userId) return { success: false, data: [] };
+  if (!userId) return EMPTY_HISTORY_RESPONSE;
 
-  const user = await getUserByClerkId(userId);
+  const user = await getHistoryUser(userId);
   if (!user) return { success: false, data: [] };
 
   const records = await db.managerReadme.findMany({

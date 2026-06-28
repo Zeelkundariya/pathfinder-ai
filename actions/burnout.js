@@ -1,17 +1,25 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
 
 import { db } from "@/lib/prisma";
+import { logActionError } from "@/lib/action-logger";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { getHistoryRecords } from "@/lib/history-query";
+import { buildUserLookup } from "@/lib/user-query";
+import { buildHistoryResponse } from "@/lib/history-loader";
 import { buildSecurePrompt, parseAIJson } from "@/lib/prompt-safety";
 import { generateGeminiContent } from "@/lib/gemini";
+import { USER_NOT_FOUND_RESPONSE } from "@/lib/user-not-found";
+import { CREATED_AT_DESC } from "@/lib/sort-config";
 
+/** Assess burnout risk based on user survey responses. */
 export async function assessBurnout(symptoms, workload) {
   const { userId } = await auth();
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
-  const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  const user = await db.user.findUnique(buildUserLookup(userId));
+  if (!user) return USER_NOT_FOUND_RESPONSE;
 
   if (!symptoms || !workload) {
     return { success: false, errors: { _form: ["Both symptoms and workload details are required."] } };
@@ -54,22 +62,22 @@ export async function assessBurnout(symptoms, workload) {
     revalidatePath("/burnout-coach");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Burnout Assessment Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to assess burnout"] } };
+    return handleServerError(error, "burnout");
   }
 }
+/** Retrieve all burnout assessments for the current user. */
 
 export async function getBurnoutAssessments() {
   const { userId } = await auth();
-  if (!userId) return { success: false, data: [] };
+  if (!userId) return EMPTY_HISTORY_RESPONSE;
 
-  const user = await db.user.findUnique({ where: { clerkUserId: userId } });
+  const user = await db.user.findUnique(buildUserLookup(userId));
   if (!user) return { success: false, data: [] };
 
-  const records = await db.burnoutAssessment.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const records = await getHistoryRecords(
+  db.burnout,
+  user.id
+);
 
-  return { success: true, data: records };
+  return buildHistoryResponse(records);
 }

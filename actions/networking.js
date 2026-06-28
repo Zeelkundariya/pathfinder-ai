@@ -1,4 +1,6 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -30,7 +32,7 @@ export async function generateNetworkingEmail(data) {
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
   });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   const prompt = buildSecurePrompt({
     context: buildUserProfileContext(user),
@@ -66,8 +68,7 @@ Output the 3 variations clearly separated by headings (e.g. ### Variation 1). Do
     revalidatePath("/networking");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Networking Email Generation Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to generate emails"] } };
+    return handleServerError(error, "networking");
   }
 }
 

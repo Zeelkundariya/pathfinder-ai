@@ -1,4 +1,6 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -11,7 +13,7 @@ export async function reframeThoughts(doubts, achievements) {
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
   const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   if (!doubts || !achievements) {
     return { success: false, errors: { _form: ["Both fields are required."] } };
@@ -55,8 +57,7 @@ export async function reframeThoughts(doubts, achievements) {
     revalidatePath("/imposter-syndrome");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Imposter Syndrome Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to generate reframes"] } };
+    return handleServerError(error, "imposter-syndrome");
   }
 }
 

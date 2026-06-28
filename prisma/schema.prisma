@@ -56,6 +56,7 @@ model User {
   roadmaps             Roadmap[]
   jobApplications      JobApplication[]
   linkedinOptimizations LinkedInOptimization[]
+  githubAnalyses       GithubAnalysis[]
   networkingEmails     NetworkingEmail[]
   projectIdeas         ProjectIdea[]
   resumeGenerations    ResumeGeneration[]
@@ -94,12 +95,13 @@ model User {
 
   exportRecords ExportRecord[]
   auditLogs     AuditLog[]
+  resumeMatchAnalyses ResumeMatchAnalysis[]
 }
 
 model Assessment {
   id             String   @id @default(cuid())
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   quizScore      Float
   questions      Json[]
   category       String
@@ -113,7 +115,7 @@ model Assessment {
 model Resume {
   id        String   @id @default(cuid())
   userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   content   String   @db.Text
   atsScore  Float?
   feedback  String?
@@ -124,7 +126,7 @@ model Resume {
 model CoverLetter {
   id             String   @id @default(cuid())
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   content        String
   jobDescription String?
   companyName    String
@@ -191,7 +193,7 @@ model Message {
 model AtsAnalysis {
   id              String   @id @default(cuid())
   userId          String
-  user            User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   resumeContent   String   @db.Text
   jobDescription  String   @db.Text
   jobTitle        String?
@@ -262,15 +264,21 @@ model AuditLog {
 
 
 model UserSettings {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id])
-  theme           String   @default("light")
-  notifications   Boolean  @default(true)
-  emailAlerts     Boolean  @default(true)
-  dashboardLayout String   @default("default")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme                  String   @default("light")
+  notifications          Boolean  @default(true)
+  emailAlerts            Boolean  @default(true)
+  dashboardLayout        String   @default("default")
+  largeButtonsMode       Boolean  @default(false)
+  highContrastMode       Boolean  @default(false)
+  speechSpeed            Float    @default(1.0)
+  preferredLanguage      String   @default("en")
+  preferredVoiceLanguage String   @default("en")
+  oneTapCameraMode       Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 }
 
 // @@unique([userId, action, windowStart]) - exact-window upsert/lookup (rate-limit hot path).
@@ -326,6 +334,18 @@ model LinkedInOptimization {
   userId         String
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   profileContent String   @db.Text
+  analysis       Json
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model GithubAnalysis {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  githubUrl      String?  @db.Text
+  profileContent String?  @db.Text
   analysis       Json
   createdAt      DateTime @default(now())
 
@@ -758,6 +778,25 @@ model ExecutivePresence {
   @@index([userId])
 }
 
+model ResumeMatchAnalysis {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeContent        String   @db.Text
+  jobDescription       String   @db.Text
+  jobTitle             String?
+  companyName          String?
+  matchScore           Float
+  matchedKeywords      String[]
+  missingKeywords      String[]
+  sectionFeedback      Json
+  suggestions          Json
+  improvedBulletPoints Json
+  createdAt            DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
 model Portfolio {
   id          String   @id @default(cuid())
   userId      String   @unique
@@ -768,4 +807,4 @@ model Portfolio {
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-}
+}
