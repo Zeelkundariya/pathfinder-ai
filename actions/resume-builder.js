@@ -117,13 +117,19 @@ export async function generateResumeContent(jobDescription) {
 }
 
 export async function getResumeHistory() {
-  const user = await getHistoryUserContext();
-  if (!user) return EMPTY_HISTORY_RESPONSE;
+  try {
+    const user = await getHistoryUserContext();
 
-  const records = await db.resumeGeneration.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
+    if (!user) return EMPTY_HISTORY_RESPONSE;
 
-  return { success: true, data: records };
+    const records = await db.resumeGeneration.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { success: true, data: records };
+  } catch (error) {
+    console.error("Resume history error:", error);
+    throw error;
+  }
 }
