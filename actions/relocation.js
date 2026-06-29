@@ -1,4 +1,6 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -11,7 +13,7 @@ export async function analyzeRelocation(currentCity, targetCity, salary) {
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
   const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   if (!currentCity || !targetCity || !salary) {
     return { success: false, errors: { _form: ["Current city, target city, and salary are required."] } };
@@ -53,8 +55,7 @@ export async function analyzeRelocation(currentCity, targetCity, salary) {
     revalidatePath("/relocation");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Relocation Analysis Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to analyze relocation"] } };
+    return handleServerError(error, "relocation");
   }
 }
 

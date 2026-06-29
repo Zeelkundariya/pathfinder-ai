@@ -1,4 +1,6 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -11,7 +13,7 @@ export async function generateVisaStrategy(visaType, targetRole, concerns) {
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
   const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   if (!visaType || !targetRole) {
     return { success: false, errors: { _form: ["Visa type and target role are required."] } };
@@ -52,8 +54,7 @@ export async function generateVisaStrategy(visaType, targetRole, concerns) {
     revalidatePath("/visa-guide");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Visa Strategy Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to generate strategy"] } };
+    return handleServerError(error, "visa");
   }
 }
 

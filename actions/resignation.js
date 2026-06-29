@@ -1,4 +1,6 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -19,14 +21,20 @@ export async function generateResignationLetter(circumstance, lastDay) {
   if (isNaN(parsedLastDay.getTime())) {
     return { success: false, errors: { _form: ["Last Day must be a valid date."] } };
   }
-  if (parsedLastDay < new Date()) {
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const normalizedLastDay = new Date(parsedLastDay);
+  normalizedLastDay.setHours(0, 0, 0, 0);
+
+  if (normalizedLastDay < today) {
     return { success: false, errors: { _form: ["Last Day must be a future date."] } };
   }
 
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
   });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   const prompt = buildSecurePrompt({
     context: buildUserProfileContext(user),
@@ -55,8 +63,7 @@ export async function generateResignationLetter(circumstance, lastDay) {
     revalidatePath("/resignation-letter");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Resignation Letter Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to generate resignation letter"] } };
+    return handleServerError(error, "resignation");
   }
 }
 

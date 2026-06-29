@@ -1,4 +1,6 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
+import { createErrorResponse } from "@/lib/action-errors";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -11,7 +13,7 @@ export async function generateSideHustles(skills, interests) {
   if (!userId) return { success: false, errors: { _form: ["Unauthorized"] } };
 
   const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-  if (!user) return { success: false, errors: { _form: ["User not found"] } };
+  if (!user) return createErrorResponse("User not found");
 
   if (!skills || !interests) {
     return { success: false, errors: { _form: ["Both skills and interests are required."] } };
@@ -69,8 +71,7 @@ export async function generateSideHustles(skills, interests) {
     revalidatePath("/side-hustle");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Side Hustle Generator Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to generate ideas"] } };
+    return handleServerError(error, "side-hustle");
   }
 }
 

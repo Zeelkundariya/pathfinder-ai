@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getJobApplications } from "@/actions/job-tracker";
+import { getJobApplications, syncJobApplicationsFromEmail } from "@/actions/job-tracker";
 import KanbanBoard from "./_components/KanbanBoard";
-import { Sparkles, Briefcase } from "lucide-react";
+import { Sparkles, Briefcase, Mail, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function JobTrackerPage() {
   const [jobs, setJobs] = useState([]);
@@ -25,6 +27,28 @@ export default function JobTrackerPage() {
     }
     loadJobs();
   }, []);
+
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSync = async () => {
+    try {
+      setSyncing(true);
+      toast.info("Syncing emails... This might take a few seconds.");
+      const result = await syncJobApplicationsFromEmail();
+      if (result.success) {
+        toast.success(result.message);
+        // Refresh jobs
+        const updated = await getJobApplications();
+        if (updated.success) setJobs(updated.data);
+      } else {
+        toast.error(result.message || "Failed to sync emails.");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred while syncing.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -47,6 +71,12 @@ export default function JobTrackerPage() {
             <p className="text-muted-foreground text-sm md:text-base font-medium">
               Manage and track your job hunt pipeline in one place.
             </p>
+          </div>
+          <div>
+            <Button onClick={handleSync} disabled={syncing || loading} variant="outline" className="gap-2 bg-background/50 backdrop-blur-sm border-primary/20 hover:bg-primary/10">
+              {syncing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              {syncing ? "Syncing..." : "Sync from Email"}
+            </Button>
           </div>
         </motion.div>
 

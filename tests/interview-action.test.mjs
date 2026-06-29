@@ -7,6 +7,8 @@ const actionMocks = vi.hoisted(() => ({
   generateGeminiContent: vi.fn(),
   checkRateLimit: vi.fn(),
   formatResetTime: vi.fn(),
+  cacheGet: vi.fn(),
+  cacheDelete: vi.fn(),
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({
@@ -33,6 +35,17 @@ vi.mock("@/lib/rate-limit-actions", () => ({
   formatResetTime: actionMocks.formatResetTime,
 }));
 
+vi.mock("@/lib/cache", async () => {
+  const actual = await vi.importActual("@/lib/cache");
+  return {
+    ...actual,
+    cacheStore: {
+      get: actionMocks.cacheGet,
+      delete: actionMocks.cacheDelete,
+    },
+  };
+});
+
 describe("saveQuizResult", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -40,7 +53,6 @@ describe("saveQuizResult", () => {
 
   it("saves quiz result with dynamic industry-aware fallback tip when AI fails", async () => {
     const { saveQuizResult } = await import("../actions/interview.js");
-    const { cacheStore, generateCacheKey } = await import("../lib/cache/index.js");
     const { getCacheStore, generateCacheKey } = await import("../lib/cache/index.js");
 
     actionMocks.auth.mockResolvedValue({ userId: "user-123" });
@@ -71,11 +83,13 @@ describe("saveQuizResult", () => {
 
     const cacheKey = generateCacheKey("quiz-session", "user-123", sessionId);
     const cacheStore = getCacheStore();
-    const cacheKey = generateCacheKey("quiz:session", "user-123", sessionId);
     await cacheStore.set(cacheKey, questions);
 
     const answers = ["Measuring temperature"]; // Wrong answer
 
+    actionMocks.cacheGet.mockResolvedValue(questions);
+
+    const result = await saveQuizResult("test-session-123", answers, "Technical");
     const result = await saveQuizResult(sessionId, answers, "Technical");
 
     expect(actionMocks.auth).toHaveBeenCalled();
