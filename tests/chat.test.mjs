@@ -130,7 +130,7 @@ describe("chatWithGemini", () => {
 
     await expect(chatWithGemini("Help me with interviews")).resolves.toEqual({
       success: false,
-      errors: { _form: ["Failed to get response from Gemini AI. Please try again."] },
+      errors: { _form: ["An unexpected error occurred. Our team has been notified."] },
     });
     expect(consoleErrorSpy).toHaveBeenCalled();
   });

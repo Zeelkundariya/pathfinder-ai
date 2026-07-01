@@ -1,4 +1,5 @@
 "use server";
+import { handleServerError } from "@/lib/error-handler";
 
 import { db } from "@/lib/prisma";
 import { buildUserLookup } from "@/lib/user-query";
@@ -19,10 +20,7 @@ import { USER_NOT_FOUND_RESPONSE } from "@/lib/user-not-found";
 /** Grade an assignment submission against a rubric or prompt. */
 export async function gradeAssignment(promptText, solutionText) {
   const user = await getAuthenticatedHistoryUser();
-
-  const user = await getUserByScope(userId);
   if (!user) return USER_NOT_FOUND_RESPONSE;
-  if (!user) return EMPTY_HISTORY_RESPONSE;
 
   if (!promptText || !solutionText) {
     return { success: false, errors: { _form: ["Both prompt and solution are required."] } };
@@ -63,8 +61,7 @@ export async function gradeAssignment(promptText, solutionText) {
     revalidatePath("/assignment-grader");
     return { success: true, data: record };
   } catch (error) {
-    console.error("Assignment Grader Error:", error);
-    return { success: false, errors: { _form: [error.message || "Failed to grade assignment"] } };
+    return handleServerError(error, "assignment");
   }
 /** Retrieve all graded assignments for the current user. */
 }
